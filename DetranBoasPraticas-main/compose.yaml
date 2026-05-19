@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: gandalf_db
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - gandalf_pgdata:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_service
+    restart: unless-stopped
+    ports:
+      - "11436:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app_network
+
+  gendalf_app:
+    build: ./app_python
+    container_name: gandalf_app
+    restart: unless-stopped
+    depends_on:
+      - db
+      - ollama
+    ports:
+      - "8000:8000" # Exemplo: Ajuste para a porta que sua API/Interface utiliza
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - ./app_python:/app
+    networks:
+      - app_network
+    # Ajuste o comando abaixo para o arquivo que sobe a interface para os testadores
+    command: uvicorn /app/main:app --host 0.0.0.0 --port 8000 
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  gandalf_pgdata:
+  ollama_data:
