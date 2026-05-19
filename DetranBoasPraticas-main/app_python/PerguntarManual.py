@@ -4,7 +4,7 @@ import json
 import requests
 import psycopg2
 import pgvector.psycopg2
-
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import List, Tuple, Optional, Any
@@ -21,12 +21,86 @@ db_host = os.getenv("DB_HOST", "localhost")
 db_port = os.getenv("DB_PORT", "5435")
 
 ollama_chat_model = os.getenv("OLLAMA_CHAT_MODEL", "deepseek-r1:8b")
-ollama_embed_model = os.getenv("OLLAMA_EMBED_MODEL", "bge-m3")
-ollama_base_url = os.getenv("OLLAMA_BASE_URL", f"http://{db_host}:11436")
+ollama_embed_model = os.getenv("OLLAMA_EMBED_MODEL", "bge-m3:latest")
+ollama_base_url = os.getenv("OLLAMA_BASE_URL", f"http://{db_host}:11434")
 
 ollama_api_embed = f"{ollama_base_url}/api/embeddings"
 ollama_api_chat = f"{ollama_base_url}/api/chat"
 
+STR_CORRECTION_SYSTEM_PROMPT = """\
+Você é o G.E.N.D.A.L.F. (Gestor de Análise de Normas do Detran), um auditor rigoroso de banco de dados especializado em precisão documental, nomenclatura e conformidade técnica.
+
+Sua tarefa é comparar o texto do usuário com os trechos do documento oficial e com a memória prática fornecidos abaixo, identificando o que está correto, parcialmente correto, incorreto ou não verificável.
+
+HIERARQUIA DE DECISÃO:
+1. Regra expressa do documento oficial recuperado.
+2. Regra específica do objeto analisado, que prevalece sobre regra geral.
+3. Exemplos práticos homologados pela Administração de Dados, quando forem compatíveis com as regras oficiais.
+4. Inferências razoáveis, somente quando forem sustentadas pelos trechos.
+5. Se não houver regra, exemplo ou trecho suficiente, classifique como "Não verificável".
+
+USO DA MEMÓRIA PRÁTICA DE EXEMPLOS:
+- A seção [[ EXEMPLOS PRÁTICOS HOMOLOGADOS PELA ADMINISTRAÇÃO DE DADOS ]] representa aprendizado acumulado a partir da tabela ExemploPratico.
+- Bons exemplos são padrões recomendáveis; maus exemplos são padrões a evitar.
+- Quanto mais exemplos forem inseridos e vetorizados pela equipe de Administração de Dados, melhor deve ficar a recuperação de padrões similares.
+- Não use os termos "APROVADO" e "REPROVADO" como classificação final. A classificação final permitida continua sendo: Correto, Parcialmente Correto, Incorreto ou Não verificável.
+- Se os exemplos apontarem uma prática e o documento oficial apontar outra, informe o conflito e priorize a regra oficial.
+
+DICIONÁRIO DE FOCO DO DETRAN:
+- "table", "tabelas", "entidade" -> Tabela
+- "column", "field", "atributo", "campo" -> Coluna
+- "proc", "procedure" -> Procedure
+- "index", "indice", "índice" -> Índice
+- "trigger", "gatilho" -> Trigger
+- "database", "banco", "banco de dados", "db" -> Banco
+- "view", "visão" -> View
+- "pk", "primary key", "chave primária" -> Primary Key
+- "fk", "foreign key", "chave estrangeira" -> Foreign Key
+
+DIRETRIZES DE AVALIAÇÃO:
+1. Precisão: cite a regra, exemplo ou trecho exato usado na justificativa.
+2. Zero alucinação: não invente regra, prefixo, exceção ou padrão não presente nos trechos.
+3. Cobertura: se houver DDL, SQL ou texto com múltiplos objetos, analise cada componente relevante mencionado pelo usuário.
+4. Suposições: se a pergunta for vaga, indique claramente qual suposição foi adotada.
+5. Conflitos: se houver conflito entre regras ou entre regra e exemplo, explique o conflito e priorize a regra mais específica/documental.
+6. Avaliação parcial: use "Parcialmente Correto" quando parte do objeto estiver adequada e parte precisar de ajuste.
+
+REGRAS ANTI-ALUCINAÇÃO SQL:
+- NUNCA sugira espaços em branco em nomes de tabelas, colunas, procedures, índices, triggers ou demais objetos de banco.
+- NUNCA recomende snake_case ou separação_por_underline para tabelas, colunas ou procedures, salvo se os trechos recuperados exigirem explicitamente.
+- NUNCA recomende prefixos genéricos como "tbl" ou "col", salvo se os trechos recuperados exigirem explicitamente.
+- Para tabelas e colunas, prefira o padrão documental recuperado para Pascal Case/Notação Húngara quando ele estiver nos trechos.
+- Para índices, só recomende padrão específico quando houver regra ou exemplo recuperado que sustente a recomendação.
+
+CLASSIFICAÇÃO PERMITIDA:
+- Correto
+- Parcialmente Correto
+- Incorreto
+- Não verificável
+
+TRECHOS DO DOCUMENTO E MEMÓRIAS PRÁTICAS:
+{strContext}
+"""
+
+STR_CORRECTION_USER_PROMPT = """\
+Texto do usuário para análise:
+\"\"\"
+{strUserText}
+\"\"\"
+
+Retorne sua análise em Markdown neste formato:
+
+1. **CLASSIFICAÇÃO GERAL:** Correto / Parcialmente Correto / Incorreto / Não verificável
+2. **OBJETO(S) ANALISADO(S):** indique se o foco é Tabela, Coluna, Procedure, Índice, Trigger, Banco, View, Primary Key, Foreign Key ou outro objeto identificado.
+3. **PONTOS CORRETOS:** liste o que está aderente ao documento ou aos exemplos práticos compatíveis, ou "Nenhum ponto confirmado".
+4. **ERROS OU RISCOS:** liste cada erro, inconsistência, ausência de evidência ou risco técnico identificado.
+5. **EXPLICAÇÃO:** explique cada ponto com base nos trechos recuperados e/ou exemplos práticos recuperados, sem inventar regras.
+6. **SUGESTÃO DE CORREÇÃO:** proponha ajuste técnico apenas quando houver base documental ou exemplo prático compatível suficiente.
+7. **REFERÊNCIAS:** indique regra/documento/exemplo usado como fundamento.
+8. **VERSÃO CORRIGIDA:** reescreva o texto ou objeto quando possível; se não for possível, diga que a correção não é verificável com os trechos disponíveis.
+
+Se não houver regras ou exemplos aplicáveis nos trechos fornecidos, responda que não localizou evidência suficiente no banco de conhecimento para validar o objeto com segurança.
+"""
 
 def LimparRespostaDeepSeek(textobruto: str) -> str:
     if not textobruto:
@@ -53,11 +127,24 @@ def Embedtexto(text: str) -> Optional[List[float]]:
     try:
         resposta = requests.post(
             ollama_api_embed,
-            json={"model": ollama_embed_model, "prompt": text},
+            json={
+                "model": ollama_embed_model,
+                "input": text,
+            },
             timeout=30,
         )
         resposta.raise_for_status()
-        return resposta.json()["embedding"]
+
+        dados = resposta.json()
+
+        if "embeddings" in dados:
+            return dados["embeddings"][0]
+
+        if "embedding" in dados:
+            return dados["embedding"]
+
+        raise RuntimeError(f"Resposta inesperada do Ollama: {dados}")
+
     except requests.RequestException as e:
         raise RuntimeError(f"Falha ao vetorizar texto no Ollama: {e}") from e
 
@@ -184,7 +271,6 @@ def EncontrarRegras(
 
     finally:
         cursor.close()
-        cursor.close()
 
 def BuscarHistorico(conn, pergunta_vetor: List[float], top_k: int = 3) -> List[Tuple]:
     try:
@@ -230,143 +316,111 @@ def BuscarExemplos(conn, pergunta_vetor: List[float], foco_usuario: str, top_k: 
         cursor.close()
 
 def PerguntaOllama(pergunta: str, contexto_regras: List, ExemploPratico: List, historico_testes: List) -> str:
-    print("\n" + "="*10)
+    print("\n" + "=" * 10)
     print(f"[DEBUG] Regras totais recuperadas do Banco: {len(contexto_regras)}")
+
     if not contexto_regras:
         print("[ALERTA] O Retrieval retornou lista vazia! O contexto sera nulo.")
     else:
         for i, dados_regra in enumerate(contexto_regras[:5]):
             regra = dados_regra[0]
-            regra_curta = (regra[:80] + '..') if regra else "N/A"
-            print(f"   {i+1}. {regra_curta}")
-    print("="*10 + "\n")
+            regra_curta = (regra[:80] + "..") if regra else "N/A"
+            print(f"   {i + 1}. {regra_curta}")
 
-    contexto_str = ""
-    if contexto_regras:
-        contexto_str = "\n".join(f"- Regra: {str(dados_regra[0] or '')}" for dados_regra in contexto_regras)
-    
-    exemplos_str = ""
-    if ExemploPratico:
-        exemplos_str = "\n[[ EXEMPLOS DE REFERENCIA (USE COMO GABARITO) ]]\n"
-        for is_bom, texto, explicacao in ExemploPratico:
-            tipo_txt = "APROVADO (Seguir este modelo)" if is_bom else "REPROVADO (Evitar este modelo)"
-            exemplos_str += f"[{tipo_txt}]: {texto} -> Motivo: {explicacao}\n"
+    print("=" * 10 + "\n")
+    print(" RESPOSTA DO G.E.N.D.A.L.F:")
+    print("#" * 15)
 
-    historico_str = ""
-    if historico_testes:
-        historico_str = "\n[[ CONHECIMENTO ADQUIRIDO EM TESTES ANTERIORES ]]\n"
-        for nome_arquivo, texto in historico_testes:
-            historico_str += f"- (Referencia: {nome_arquivo}): {texto}\n"
+    str_contexto = MontarContextoGendalf(
+        contexto_regras=contexto_regras,
+        exemplos_praticos=ExemploPratico,
+        historico_testes=historico_testes,
+    )
 
-    print(" RESPOSTA DO G.E.N.D.A.L.F:") 
-    print("#"*15)
-
-    prompt_sistema = """
-    Voce e o G.E.N.D.A.L.F (Gestor de Analise de Normas do Detran).
-    Sua funcao e atuar como um AUDITOR RIGIDO de banco de dados.
-    
-    INSTRUCAO MESTRA E HIERARQUIA DE REGRAS:
-    PRIORIDADE 1: [[ EXEMPLOS DE REFERENCIA ]]. 
-    PRIORIDADE 2: [[ REGRAS VIGENTES ]]. Aplique as regras listadas para o objeto especifico. 
-    PRIORIDADE 3: [[ CONHECIMENTO ADQUIRIDO ]]. Use o historico como apoio.
-
-    DIRETRIZES E REGRAS DE AVALIACAO:
-    1. PRECISAO: Cite a regra ou exemplo exato na justificativa.
-    2. ZERO ALUCINACAO E OBJETIVIDADE: Nunca invente regras ou avalie regras de objetos nao solicitados. Nao utilize emojis na formatacao da resposta.
-    3. COBERTURA: Analise cada componente (Tabela, Indices, Triggers) que estiver presente na solicitacao do usuario.
-    4. FORMATACAO ESTRITA (GABARITO OBRIGATORIO PARA RECOMENDACOES):
-       - Para corrigir nomes de tabelas e colunas, o formato exigido e a Notacao Hungara do Detran: Primeira letra de cada palavra maiuscula, demais minusculas, SEM ESPACOS e SEM UNDERLINES.
-       - CORRECAO PROIBIDA: data_entrega, tbl_documento, id_veiculo.
-       - CORRECAO EXIGIDA: DataEntrega, DocumentoVeiculo, Veiculo.
-       - Para corrigir indices, o formato exigido e: nomedatabela_primeiracoluna.
-       - CORRECAO PROIBIDA: idx_data, index_2.
-       - CORRECAO EXIGIDA: docveiculo_datainclusao.
-    5. ANTI-ALUCINACAO SQL: 
-       - NUNCA sugira o uso de espacos em branco em nomes de tabelas ou colunas.
-       - NUNCA recomende o formato snake_case (separacao_por_underline) a menos que uma regra recem-recuperada exija explicitamente.
-       - NUNCA recomende o uso de prefixos genericos como "tbl" ou "col" a menos que uma regra recem-recuperada exija explicitamente.
-    6. SUPOSICOES: Se a pergunta for vaga ou ambigua, responda com base nas regras mais proximas, mas deixe claro na justificativa quais suposicoes voce fez.
-    7. CONFLITOS: Caso haja conflito entre regras, priorize a regra mais especifica para o objeto em questao (ex: regra para "Tabela" tem prioridade sobre regra geral).
-    8. AVALIACAO PARCIAL: Caso um objeto esteja parcialmente correto, indique claramente quais partes estao corretas e quais precisam de ajuste.
-
-    ESTRUTURA DE RESPOSTA OBRIGATORIA (em Markdown):
-    **Objeto Analisado:** [O que esta sendo analisado]
-    **Conformidade:** [APROVADO ou REPROVADO]
-    **Justificativa:** [Motivo baseado nas regras]
-    **Recomendacao:** [Orientacao tecnica]
-    """
-
-    prompt_usuario = f"""
-    [[ CONHECIMENTO ADQUIRIDO EM TESTES ANTERIORES ]]
-    {historico_str if historico_str.strip() else "Nenhum historico."}
-
-    [[ REGRAS VIGENTES RECUPERADAS ]]
-    {contexto_str if contexto_str.strip() else "Nenhuma regra encontrada."}
-    
-    [[ EXEMPLOS DE REFERENCIA (PRIORIDADE MAXIMA) ]]
-    {exemplos_str if exemplos_str.strip() else "Nenhum exemplo homologado encontrado."}
-
-    [[ SOLICITACAO DO DESENVOLVEDOR (ANALISE ESTA DDL) ]]
-    {pergunta}
-    
-    Se NAO houver regras aplicaveis acima, responda: "Nao localizei regras especificas no meu banco de conhecimento para validar este objeto, entre em contato com a equipe de Administracao de Dados."
-    """
+    mensagens = [
+        {
+            "role": "system",
+            "content": STR_CORRECTION_SYSTEM_PROMPT.format(strContext=str_contexto),
+        },
+        {
+            "role": "user",
+            "content": STR_CORRECTION_USER_PROMPT.format(strUserText=pergunta),
+        },
+    ]
 
     inicio_real = datetime.now()
+
     try:
         resposta = requests.post(
             ollama_api_chat,
             json={
                 "model": ollama_chat_model,
-                "messages": [
-                    {"role": "system", "content": prompt_sistema},
-                    {"role": "user", "content": prompt_usuario}
-                ],
+                "messages": mensagens,
                 "stream": True,
-                "options": {"temperature": 0, "num_ctx": 4096}
+                "options": {
+                    "temperature": 0,
+                    "num_ctx": 8192,
+                },
             },
             stream=True,
-            timeout=360
+            timeout=360,
         )
+
         resposta.raise_for_status()
+
         resposta_completa = ""
-        dentro_think = False 
-        metrics = {} 
+        dentro_think = False
+        metrics = {}
 
         for line in resposta.iter_lines():
             if line:
                 try:
-                    json_data = json.loads(line.decode('utf-8'))
-                    if 'message' in json_data:
-                        content = json_data['message']['content']
-                        if "<think>" in content: dentro_think = True
-                        if not dentro_think and "<think>" not in content and "</think>" not in content:
-                            print(content, end='', flush=True) 
-                        if "</think>" in content: dentro_think = False
+                    json_data = json.loads(line.decode("utf-8"))
+
+                    if "message" in json_data:
+                        content = json_data["message"]["content"]
+
+                        if "<think>" in content:
+                            dentro_think = True
+
+                        if (
+                            not dentro_think
+                            and "<think>" not in content
+                            and "</think>" not in content
+                        ):
+                            print(content, end="", flush=True)
+
+                        if "</think>" in content:
+                            dentro_think = False
+
                         resposta_completa += content
-                    
-                    if json_data.get('done') is True:
+
+                    if json_data.get("done") is True:
                         metrics = {
-                            'total_duration': json_data.get('total_duration', 0),
-                            'eval_count': json_data.get('eval_count', 0),
-                            'eval_duration': json_data.get('eval_duration', 0)
+                            "total_duration": json_data.get("total_duration", 0),
+                            "eval_count": json_data.get("eval_count", 0),
+                            "eval_duration": json_data.get("eval_duration", 0),
                         }
-                except ValueError: pass
-        print("\n") 
-        
+
+                except ValueError:
+                    pass
+
+        print("\n")
+
         fim_real = datetime.now()
         tempo_total_sec = (fim_real - inicio_real).total_seconds()
-        ollama_eval  = metrics.get('eval_duration', 0) / 1e9
-        tokens_gerados = metrics.get('eval_count', 0)
+        ollama_eval = metrics.get("eval_duration", 0) / 1e9
+        tokens_gerados = metrics.get("eval_count", 0)
         tps = tokens_gerados / ollama_eval if ollama_eval > 0 else 0
 
         print("-" * 40)
-        print(f"DIAGNOSTICO DE VELOCIDADE:")
+        print("DIAGNOSTICO DE VELOCIDADE:")
         print(f"Tempo Total:             {tempo_total_sec:.2f}s")
         print(f"Velocidade de Escrita:   {tps:.2f} tokens/s")
         print("-" * 10)
-        return limparrespostadeepseek(resposta_completa)
-        
+
+        return LimparRespostaDeepSeek(resposta_completa)
+
     except Exception as e:
         print(f"\n[ERRO NA GERACAO]: {e}")
         return f"Erro tecnico ao consultar LLM: {e}"
@@ -499,6 +553,52 @@ def ExecutarConsulta(pergunta: str) -> dict:
 
     finally:
         conn.close()
+        
+def MontarContextoGendalf(contexto_regras: List, exemplos_praticos: List, historico_testes: List) -> str:
+    blocos = []
+
+    if contexto_regras:
+        linhas_regras = ["[[ REGRAS VIGENTES RECUPERADAS ]]"]
+        for indice, dados_regra in enumerate(contexto_regras, start=1):
+            regra = str(dados_regra[0] or "").strip()
+            if regra:
+                linhas_regras.append(f"[Regra {indice}] {regra}")
+        blocos.append("\n".join(linhas_regras))
+    else:
+        blocos.append("[[ REGRAS VIGENTES RECUPERADAS ]]\nNenhuma regra recuperada.")
+
+    if exemplos_praticos:
+        linhas_exemplos = ["[[ EXEMPLOS PRÁTICOS HOMOLOGADOS PELA ADMINISTRAÇÃO DE DADOS ]]"]
+        for indice, dados_exemplo in enumerate(exemplos_praticos, start=1):
+            is_bom, texto, explicacao = dados_exemplo
+            tipo = "Bom exemplo" if is_bom else "Mau exemplo"
+            linhas_exemplos.append(
+                f"[Exemplo {indice} | {tipo}]\n"
+                f"Texto: {texto}\n"
+                f"Explicação: {explicacao}"
+            )
+        blocos.append("\n\n".join(linhas_exemplos))
+    else:
+        blocos.append(
+            "[[ EXEMPLOS PRÁTICOS HOMOLOGADOS PELA ADMINISTRAÇÃO DE DADOS ]]\n"
+            "Nenhum exemplo prático recuperado."
+        )
+
+    if historico_testes:
+        linhas_historico = ["[[ CONHECIMENTO ADQUIRIDO EM TESTES ANTERIORES ]]"]
+        for indice, dados_historico in enumerate(historico_testes, start=1):
+            nome_arquivo, texto = dados_historico
+            linhas_historico.append(
+                f"[Histórico {indice} | Referência: {nome_arquivo}]\n{texto}"
+            )
+        blocos.append("\n\n".join(linhas_historico))
+    else:
+        blocos.append(
+            "[[ CONHECIMENTO ADQUIRIDO EM TESTES ANTERIORES ]]\n"
+            "Nenhum histórico recuperado."
+        )
+
+    return "\n\n" + ("-" * 60) + "\n\n".join(blocos)
 
 def main():
     if len(sys.argv) < 2:
