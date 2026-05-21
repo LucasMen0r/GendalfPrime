@@ -17,7 +17,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from app_python import view
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("app_python.urls")),
+]
+from django.urls import path
+
+urlpatterns = [
+    path("exemplos/adicionar/", view.adicionar_exemplo, name="adicionar_exemplo"),
 ]
