@@ -1,0 +1,154 @@
+# ==============================================================================
+# GendalfPrime — .gitignore
+# Segurança: nenhum segredo, credencial ou dado sensível deve ser versionado.
+# ==============================================================================
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. SEGREDOS E VARIÁVEIS DE AMBIENTE
+#    CRÍTICO: nunca versionar arquivos com credenciais
+# ─────────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+jwt_secret.txt
+secrets/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. PYTHON
+# ─────────────────────────────────────────────────────────────────────────────
+# Bytecode e cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribuição e empacotamento
+*.egg-info/
+*.egg
+dist/
+build/
+sdist/
+wheels/
+*.whl
+
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# Testes e cobertura
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# MyPy / Pyright / type checkers
+.mypy_cache/
+.pytype/
+.pyre/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. DJANGO
+# ─────────────────────────────────────────────────────────────────────────────
+# Banco de dados local (SQLite)
+db.sqlite3
+db.sqlite3-journal
+
+# Arquivos de mídia e uploads enviados por usuários
+media/
+
+# Arquivos estáticos coletados (collectstatic)
+staticfiles/
+static_root/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. DOCKER
+# ─────────────────────────────────────────────────────────────────────────────
+# Nunca versionar dados de volumes persistentes
+docker-compose.override.yml
+.docker/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. BANCO DE DADOS E LOGS
+# ─────────────────────────────────────────────────────────────────────────────
+*.sql.bak
+*.dump
+*.log
+nohup.out
+saida_terminal.log
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. EDITORES / IDEs
+# ─────────────────────────────────────────────────────────────────────────────
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm, IntelliJ etc.)
+.idea/
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+\#*\#
+.#*
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. SISTEMA OPERACIONAL
+# ─────────────────────────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 8. ARQUIVOS TEMPORÁRIOS E GERADOS
+# ─────────────────────────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*.orig
+tmp/
+temp/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. MODELOS E DADOS PESADOS (LLM / Ollama)
+# ─────────────────────────────────────────────────────────────────────────────
+# Modelos de IA não devem ser versionados (são muito grandes)
+*.gguf
+*.bin
+*.onnx
+*.pt
+*.pth
+*.safetensors
+models/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 10. PERGUNTAS E RESULTADOS GERADOS
+# ─────────────────────────────────────────────────────────────────────────────
+app_python/perguntas_geradas/

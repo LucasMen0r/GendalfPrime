@@ -14,17 +14,17 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 diretorio_atual = Path(__file__).resolve().parent
-caminho_env = (diretorio_atual / '..' / '.env').resolve()
+caminho_env = (diretorio_atual / '.env').resolve()
 load_dotenv(dotenv_path=caminho_env)
 
 DB_NAME = os.getenv('DB_NAME', 'DetranNorma')
 DB_USER = os.getenv('DB_USER', 'ollama_trainer')
 DB_PASS = os.getenv('DB_PASS', '123456')
 DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_PORT = os.getenv('DB_PORT', '5435')
+DB_PORT = os.getenv('DB_PORT', '5432')
 
 ollama_base_url = os.getenv('OLLAMA_HOST', 'http://localhost:11436')
-ollama_embed_model  = "nomic-embed-text:latest"
+ollama_embed_model  = "bge-m3:latest"
 ollama_gen_model    = "deepseek-r1:8b"
 ollama_api_embed    = f"{ollama_base_url}/api/embeddings"
 ollama_api_generate = f"{ollama_base_url}/api/generate"

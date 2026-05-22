@@ -13,7 +13,7 @@ import pgvector.psycopg2
 
 # Configuração de caminhos absolutos baseados no local do script
 DIRETORIO_BASE = Path(__file__).resolve().parent
-CAMINHO_ENV = (DIRETORIO_BASE / '..' / '.env').resolve()
+CAMINHO_ENV = (DIRETORIO_BASE / '.env').resolve()
 
 load_dotenv(dotenv_path=CAMINHO_ENV)
 

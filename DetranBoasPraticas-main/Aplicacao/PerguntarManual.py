@@ -11,19 +11,19 @@ from typing import List, Tuple, Optional, Any
 from pathlib import Path
 
 
-BASE_DIR = Path(__file__).resolve().parent
-caminho_env = BASE_DIR / ".env"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+caminho_env = BASE_DIR / "app_python" / ".env"
 load_dotenv(caminho_env, override=True)
 
 db_name = os.getenv("DB_NAME", "DetranNorma")
 db_user = os.getenv("DB_USER", "postgres")
 db_pass = os.getenv("DB_PASS", "abc321")
 db_host = os.getenv("DB_HOST", "localhost")
-db_port = os.getenv("DB_PORT", "5435")
+db_port = os.getenv("DB_PORT", "5432")
 
 ollama_chat_model = os.getenv("OLLAMA_CHAT_MODEL", "deepseek-r1:8b")
 ollama_embed_model = os.getenv("OLLAMA_EMBED_MODEL", "bge-m3:latest")
-ollama_base_url = os.getenv("OLLAMA_BASE_URL", f"http://{db_host}:11436")
+ollama_base_url = os.getenv("OLLAMA_BASE_URL", os.getenv("OLLAMA_HOST", f"http://{db_host}:11434"))
 
 ollama_api_embed = f"{ollama_base_url}/api/embed"
 ollama_api_chat = f"{ollama_base_url}/api/chat"
@@ -224,19 +224,19 @@ def EncontrarRegras(
 
     try:
         sql_base = """
-        select r.descricao_regra
+        select r.DescricaoRegra
         from RegraNomenclatura r
-        join CategoriaRregra c
-          on r.pk_CategoriaRregra = c.pk_CategoriaRregra
+        join CategoriaRegra c
+          on r.pkCategoriaRegra = c.pkCategoriaRegra
         left join ObjetoDb o
-          on r.pk_ObjetoDb = o.pk_ObjetoDb
+          on r.pkObjetoDb = o.pkObjetoDb
         """
-
+   ##"como nomear uma table?" 
         filtro_distancia = " r.embedding <=> %s::vector < %s "
 
         order_clause = """
         order by
-            case when o.nome_objeto ilike %s then 0 else 1 end asc,
+            case when o.NomeObjeto ilike %s then 0 else 1 end asc,
             r.embedding <=> %s::vector asc
         limit %s;
         """
@@ -253,7 +253,7 @@ def EncontrarRegras(
                 top_k,
             )
         else:
-            sql = sql_base + " where c.nome_categoria ilike %s and " + filtro_distancia + order_clause
+            sql = sql_base + " where c.NomeCategoria ilike %s and " + filtro_distancia + order_clause
             params = (
                 f"%{nome_categoria}%",
                 list(pergunta_vetor),

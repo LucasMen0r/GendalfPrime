@@ -16,7 +16,7 @@ db_name = os.getenv('DB_NAME', 'DetranNorma')
 db_user = os.getenv('DB_USER', 'postgres')
 db_pass = os.getenv('DB_PASS', 'abc321')
 db_host = os.getenv('DB_HOST', 'localhost')
-db_port = os.getenv('DB_PORT', '5435')
+db_port = os.getenv('DB_PORT', '5432')
 
 ollama_url = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 ollama_api_embed = f"{ollama_url.rstrip('/')}/api/embeddings"
