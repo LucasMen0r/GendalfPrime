@@ -1,0 +1,87 @@
+{% extends "gendalf/base.html" %}
+
+{% block title %}Gendalf · Análise Semântica{% endblock %}
+
+{% block nav_index %}active{% endblock %}
+
+{% block sidebar_extra %}
+    <hr style="border: 0; border-top: 1px solid #2d3561; margin: 1.5rem 0;">
+    <h2>Motor de Auditoria</h2>
+    <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 0.5rem; line-height: 1.5;">
+        Interface Django ativa.<br>
+        O motor de consulta ativo é o <strong>PerguntarManual.py</strong>.
+    </p>
+
+    {% if resultado %}
+        <hr style="border: 0; border-top: 1px solid #2d3561; margin: 1.5rem 0;">
+        <h2>Dados de Recuperação</h2>
+        <div class="meta-grid">
+            <span>Categoria:</span>
+            <strong>{{ resultado.categoria|default:"-" }}</strong>
+
+            <span>Foco:</span>
+            <strong>{{ resultado.foco|default:"-" }}</strong>
+
+            <span>Modo:</span>
+            <strong>{{ resultado.modo|default:"-" }}</strong>
+
+            <span>Regras:</span>
+            <strong>{{ resultado.qtd_regras|default:"0" }}</strong>
+
+            <span>Exemplos:</span>
+            <strong>{{ resultado.qtd_exemplos|default:"0" }}</strong>
+
+            <span>Histórico:</span>
+            <strong>{{ resultado.qtd_historico|default:"0" }}</strong>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <h2 style="margin-top: 0; font-size: 1.5rem; color: #cbd5e1; border-bottom: 1px solid #2d3561; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">Auditar Diretrizes de Banco de Dados</h2>
+    
+    <p style="color: #cbd5e1; font-size: 1rem; margin-bottom: 1.5rem; line-height: 1.6;">
+        Faça perguntas teóricas ou envie textos reais de objetos SQL para análise com base nas regras, exemplos práticos e histórico do banco de conhecimento.
+    </p>
+
+    {% if erro %}
+        <div class="error-box">
+            {{ erro }}
+        </div>
+    {% endif %}
+
+    <form method="post" onsubmit="showLoader('Analisando regras de conformidade técnica...')">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="pergunta">
+                <strong>Texto para análise ou pergunta teórica</strong>
+            </label>
+            <textarea id="pergunta" name="pergunta" placeholder="Ex.: como nomear uma trigger?&#10;Ex.: cole aqui o texto de uma trigger, procedure ou tabela para análise." required>{{ pergunta }}</textarea>
+        </div>
+
+        <div class="actions">
+            <button type="submit">Analisar texto</button>
+            <a href="{% url 'app_python:index' %}" class="button-secondary">Novo texto</a>
+        </div>
+    </form>
+
+    {% if resultado and resultado.ok %}
+        <article class="result-card">
+            {% if classificacao %}
+                <p style="margin-top: 0; margin-bottom: 1.25rem;">
+                    <strong>Classificação Final:</strong>
+                    <span class="{{ badge_class }}">{{ classificacao }}</span>
+                </p>
+            {% endif %}
+
+            <h2 style="margin-top: 0; font-size: 1.35rem; color: #cbd5e1; border-bottom: 1px solid #2d3561; padding-bottom: 0.5rem;">Análise detalhada do G.E.N.D.A.L.F.</h2>
+
+            <div class="result-content" style="color: #cbd5e1; font-size: 0.98rem; margin-top: 1rem;">{{ resultado.resposta }}</div>
+
+            {% if tempo %}
+                <p style="margin-bottom: 0; margin-top: 1.5rem; text-align: right;"><small style="color: #64748b;">Tempo de processamento: {{ tempo }}s</small></p>
+            {% endif %}
+        </article>
+    {% endif %}
+{% endblock %}

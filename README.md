@@ -1,289 +1,191 @@
 # 🧙‍♂️ GendalfPrime
 
-> **Sistema inteligente de verificação de boas práticas do DETRAN**, utilizando LLMs locais (Ollama) com RAG (Retrieval-Augmented Generation) e banco vetorial (pgvector/Supabase).
+> **O Guardião Semântico das Boas Práticas de Banco de Dados do DETRAN.** 
+> Uma aplicação inteligente construída em **Django** para auditoria rigorosa de DDLs, nomenclaturas e conformidades técnicas, alimentada por LLMs locais (**Ollama**), **RAG** (Retrieval-Augmented Generation) e banco vetorial (**pgvector/Supabase**).
 
 ---
 
 ## 📋 Sumário
 
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Arquitetura](#-arquitetura)
-- [Tecnologias](#-tecnologias)
-- [Pré-requisitos](#-pré-requisitos)
-- [Instalação e Configuração](#-instalação-e-configuração)
-- [Uso](#-uso)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Segurança](#-segurança)
-- [Contribuição](#-contribuição)
-- [Licença](#-licença)
+- [🎯 Sobre o Projeto](#-sobre-o-projeto)
+- [✨ Recursos da Nova Interface Premium](#-recursos-da-nova-interface-premium)
+- [🧠 Decisões de Engenharia (O "Porquê" das Escolhas)](#-decisões-de-engenharia-o-porque-das-escolhas)
+- [🏗 Arquitetura do Sistema](#-arquitetura-do-sistema)
+- [🛠 Tecnologias Utilizadas](#-tecnologias-utilizadas)
+- [📌 Pré-requisitos](#-pré-requisitos)
+- [🚀 Instalação e Execução](#-instalação-e-configuração)
+- [💡 Guia de Uso da Interface](#-guia-de-uso-da-interface)
+- [🔒 Segurança e Boas Práticas](#-segurança-e-boas-práticas)
+- [📄 Licença](#-licença)
 
 ---
 
 ## 🎯 Sobre o Projeto
 
-O **GendalfPrime** é uma aplicação web construída em **Django** que utiliza modelos de linguagem locais (via **Ollama**) para analisar e verificar textos de acordo com as **normas de padronização do DETRAN**.
+O **GendalfPrime** foi criado para automatizar e apoiar a equipe de Administração de Dados do DETRAN no processo de validação de modelos e estruturas de bancos de dados. Ele lê, compreende e cruza as diretrizes oficiais de boas práticas com as propostas enviadas por analistas, gerando relatórios de conformidade detalhados.
 
-### Funcionalidades Principais
-
-| Funcionalidade | Descrição |
-|---|---|
-| **Consulta inteligente** | Analisa textos e classifica-os como Correto, Parcialmente Correto, Incorreto ou Não Verificável |
-| **Gestão de exemplos** | Adiciona, atualiza e remove exemplos de boas/más práticas na base vetorial |
-| **Upload de manuais** | Processa PDFs de normas e sincroniza com o banco de dados vetorial |
-| **Geração de perguntas** | Gera automaticamente perguntas de treino a partir do manual |
-| **Treinamento do modelo** | Pipeline de treinamento com os exemplos e perguntas geradas |
+O sistema trabalha com **Zero Alucinação**: as respostas da IA são baseadas *estritamente* nos trechos das normas oficiais indexadas semanticamente no banco de dados e na memória prática alimentada pela equipe.
 
 ---
 
-## 🏗 Arquitetura
+## ✨ Recursos da Nova Interface Premium
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌──────────────────┐
-│   GendalfFront   │────▶│   Django App    │────▶│   PostgreSQL     │
-│   (Templates +   │     │  (app_python)   │     │   + pgvector     │
-│    CSS)          │     │                 │     │   (Supabase)     │
-└─────────────────┘     └────────┬────────┘     └──────────────────┘
-                                 │
-                                 ▼
-                        ┌─────────────────┐
-                        │     Ollama       │
-                        │  (LLM Local)    │
-                        │  deepseek-r1:8b │
-                        │  bge-m3 (embed) │
-                        └─────────────────┘
-```
+O Gendalf agora conta com uma interface unificada em **Dark Mode** que engloba todas as suas ferramentas em um só lugar:
 
-Toda a infraestrutura pode ser orquestrada via **Docker Compose**.
+* **🔍 Análise Semântica:** Tela de auditoria interativa onde você digita ou cola um texto técnico (ex: comandos SQL/DDL) e recebe a classificação geral e a justificativa documental exata.
+* **➕ Cadastrar Exemplos Práticos:** Formulário avançado para alimentar a memória vetorial de boas e más práticas.
+* **❌ Excluir Exemplos Práticos:** Painel para deletar e gerenciar facilmente exemplos obsoletos de sua base vetorial.
+* **📤 Sincronização Automática de Manuais:** Central de upload onde você envia o arquivo PDF oficial do DETRAN, e o Gendalf se encarrega de ler, extrair, vetorizar e atualizar o banco de dados semântico automaticamente, exibindo um indicador de progresso (loader) em tempo real.
 
 ---
 
-## 🛠 Tecnologias
+## 🧠 Decisões de Engenharia (O "Porquê" das Escolhas)
 
-| Camada | Tecnologia |
-|---|---|
-| **Backend** | Python 3.12, Django 6.0 |
-| **Frontend** | Django Templates, HTML, CSS |
-| **LLM** | Ollama (deepseek-r1:8b) |
-| **Embeddings** | bge-m3 (via Ollama) |
-| **Banco de Dados** | PostgreSQL + pgvector (Supabase) |
-| **Containerização** | Docker, Docker Compose |
-| **Processamento de PDFs** | pdfplumber, pdfminer.six, PyPDF2 |
+Ao desenvolver o GendalfPrime, tomamos várias decisões de engenharia arquitetural para garantir **segurança**, **privacidade**, **desempenho** e **precisão**:
+
+### 1. Por que Inteligência Artificial Local (Ollama)?
+* **Privacidade de Dados:** A infraestrutura de modelagem de dados e as DDLs do DETRAN representam informações sensíveis de segurança. Utilizando o **Ollama local** com o modelo `deepseek-r1:8b`, garantimos que **nenhum dado saia da rede interna**.
+
+### 2. Por que RAG (Retrieval-Augmented Generation)?
+* **Eliminação de Alucinações:** Modelos de linguagem genéricos costumam alucinar sobre padrões específicos de nomenclatura de órgãos públicos. O RAG nos permite fazer uma pesquisa semântica no banco de dados, recuperar as regras e exemplos exatos e instruir a LLM a responder **única e exclusivamente** com base naquele contexto oficial.
+
+### 3. Por que pgvector + Supabase?
+* **Arquitetura Unificada:** A extensão `pgvector` no PostgreSQL permite salvar dados relacionais (tabelas e metadados) e dados vetoriais (embeddings de 1024 dimensões) no mesmo banco de dados. Isso simplifica o backup, a escalabilidade e reduz a latência das consultas.
+
+### 4. Por que a unificação na classe `supabase_config.py`?
+* **Single Source of Truth:** Unificamos todas as conexões a banco de dados do projeto (do corretor semântico aos scripts de inserção e upload) para herdarem de `conectar_db()` no `supabase_config.py`. Isso resolveu problemas de inconsistência de portas de Poolers (Transaction vs Session no Supabase) e tornou a rotação de senhas do `.env` muito mais prática e robusta.
+
+### 5. Por que Gravação Temporária Efêmera no Upload?
+* **Segurança e Desempenho:** No upload de manuais PDF, o arquivo nunca é salvo permanentemente em diretórios expostos na Web (evitando execuções remotas). Ele é escrito em um arquivo temporário efêmero gerado pelo sistema operacional, processado na memória RAM do pipeline de vetorização e excluído automaticamente do disco no final do bloco de execução.
+
+---
+
+## 🏗 Arquitetura do Sistema
+
+```
+                         ┌────────────────────────────────────────┐
+                         │              Interface Web             │
+                         │           (Django Templates)           │
+                         └───────────────────┬────────────────────┘
+                                             │
+                                             ▼
+                         ┌────────────────────────────────────────┐
+                         │               Django BFF               │
+                         │             (app_python)               │
+                         └──────┬──────────────────────────┬──────┘
+                                │                          │
+                                ▼                          ▼
+        ┌────────────────────────────────┐        ┌────────────────────────────────┐
+        │             Ollama             │        │     PostgreSQL + pgvector      │
+        │          (LLM Local)           │        │           (Supabase)           │
+        │ 🔌 bge-m3 (Embeddings)         │        │ 💾 Tabela RegraDocumental      │
+        │ 🔌 deepseek-r1:8b (Raciocínio) │        │ 💾 Tabela ExemploPratico       │
+        └────────────────────────────────┘        └────────────────────────────────┘
+```
+
+---
+
+## 🛠 Tecnologias Utilizadas
+
+* **Framework Principal:** Django 6.0 (Python 3.12)
+* **Frontend:** Django Templates, CSS Vanilla (Estilo Dark Glassmorphism)
+* **Banco de Dados:** PostgreSQL + extensão `pgvector` (hospedado no Supabase)
+* **Motor de IA Local:** Ollama (`deepseek-r1:8b` + `bge-m3:latest` para embeddings)
+* **Parser de Documentos:** `pdfplumber`, `PyPDF2`, `pdfminer.six`
 
 ---
 
 ## 📌 Pré-requisitos
 
-- **Python** 3.12+
-- **Docker** e **Docker Compose** (para execução containerizada)
-- **Ollama** instalado com os modelos:
-  - `deepseek-r1:8b` (chat)
-  - `bge-m3:latest` (embeddings)
-- Conta no **Supabase** (ou PostgreSQL local com extensão `pgvector`)
+1. **Python 3.12+** instalado localmente.
+2. **Ollama** instalado e executando na sua rede/máquina.
+3. Modelos necessários no Ollama:
+   ```bash
+   ollama pull deepseek-r1:8b
+   ollama pull bge-m3:latest
+   ```
+4. Acesso a uma instância PostgreSQL com suporte a `pgvector` (como o Supabase).
 
 ---
 
 ## 🚀 Instalação e Configuração
 
-### 1. Clone o repositório
-
+### 1. Clonar o projeto
 ```bash
-git clone https://github.com/seu-usuario/GendalfPrime.git
+git clone https://github.com/lucasmen0r/GendalfPrime.git
 cd GendalfPrime
 ```
 
-### 2. Configure as variáveis de ambiente
-
+### 2. Configurar Variáveis de Ambiente
+Copie o arquivo `.env.example` e preencha-o com as credenciais reais de banco de dados do Supabase e as rotas corretas do Ollama:
 ```bash
-# Copie o template e preencha com suas credenciais
 cp app_python/.env.example app_python/.env
 ```
 
-> [!CAUTION]
-> **Nunca** versione o arquivo `.env` com credenciais reais. O `.gitignore` já está configurado para ignorá-lo.
-
-### 3. Execução com Docker (recomendado)
-
+### 3. Configurar Ambiente Virtual e Dependências
 ```bash
-cd Docker
-docker compose up --build -d
+# Criar o ambiente virtual python
+python3 -m venv venv
+
+# Ativar o ambiente virtual
+source venv/bin/activate
+
+# Instalar dependências necessárias
+pip install -r app_python/requirements.txt
 ```
 
-Os serviços iniciados serão:
-- **gandalf_db** — PostgreSQL + pgvector (porta `5435`)
-- **ollama_service** — Ollama LLM (porta `11436`)
-- **gandalf_app** — Aplicação Django (porta `8000`)
-
-### 4. Execução local (sem Docker)
-
+### 4. Executar Servidor Django
 ```bash
-# Crie e ative o ambiente virtual
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Instale as dependências
-pip install -r app_python/requirements.txt
-
-# Baixe os modelos do Ollama
-ollama pull deepseek-r1:8b
-ollama pull bge-m3:latest
-
-# Execute as migrações do Django
+# Aplicar migrações estruturais se necessário
 python manage.py migrate
 
-# Inicie o servidor de desenvolvimento
+# Iniciar o servidor de desenvolvimento na porta 8000
 python manage.py runserver 127.0.0.1:8000
 ```
-
-> [!IMPORTANT]
-> Em desenvolvimento, sempre utilize `127.0.0.1` ou `localhost` como host do servidor. **Nunca** exponha o servidor em `0.0.0.0` em ambientes de teste.
+Acesse no seu navegador a URL `http://127.0.0.1:8000` para iniciar o uso.
 
 ---
 
-## 💡 Uso
+## 💡 Guia de Uso da Interface
 
-### Interface Web
+### 🔍 1. Análise Semântica (Página Inicial)
+* **Como funciona:** Digite uma DDL ou texto explicativo de suas intenções estruturais (ex: *"Criei a tabela TabUsuario com chave primária ID_USUARIO"*).
+* **Processamento:** O Gendalf extrai as entidades em foco, consulta a base de conhecimento vetorial do Supabase em busca de normas e exemplos, envia as informações recuperadas ao `deepseek-r1:8b` local e entrega um relatório detalhado separando **Pontos Corretos**, **Erros ou Riscos**, **Explicação**, **Sugestão de Correção** e **Referências**.
 
-Acesse `http://127.0.0.1:8000` no navegador para utilizar a interface de consulta.
+### ➕ 2. Adicionar Exemplo Prático
+* **Como funciona:** Vá em "Adicionar Exemplo" no menu lateral.
+* **Preenchimento:**
+  * **Objeto Foco:** Tipo de objeto (ex: `Tabela`, `Procedure`, `Coluna`, `Trigger`).
+  * **Nome / Padrão:** O exemplo concreto (ex: `TabPreferenciaJari`).
+  * **Classificação:** Defina se o padrão é Recomendável (**Bom Exemplo**) ou A Evitar (**Mau Exemplo**).
+  * **Explicação Técnica:** A justificativa que ensina a IA a agir de tal forma.
+* **Salvamento:** Ao enviar, o Gendalf cria um embedding vetorial e o salva de forma persistente no banco de dados para consultas RAG futuras.
 
-### Funcionalidades disponíveis
+### ❌ 3. Remover Exemplo Prático
+* **Como funciona:** Vá em "Remover Exemplo" no menu lateral.
+* **Preenchimento:** Forneça o objeto foco e o texto exato do exemplo cadastrado que deseja retirar da memória vetorial do assistente.
 
-- **Consulta** — Envie um texto para análise de conformidade com as normas
-- **Adicionar Exemplo** — Cadastre exemplos de boas ou más práticas em `/exemplos/adicionar/`
-- **Upload de Manual** — Envie PDFs atualizados do manual de normas
-- **Remover Exemplo** — Remova exemplos obsoletos da base
-
-### Scripts utilitários
-
-```bash
-# Gerar perguntas automaticamente a partir do manual
-python app_python/GerarPerguntasGendalf.py
-
-# Executar o treino do modelo
-python app_python/TreinoGendalf.py
-```
-
----
-
-## 📂 Estrutura do Projeto
-
-```
-GendalfPrime/
-├── .env.example                  # Template de variáveis de ambiente
-├── .gitignore                    # Regras de exclusão do Git
-├── manage.py                     # CLI do Django
-├── db.sqlite3                    # Banco local (ignorado pelo Git)
-│
-├── gendalf_config/               # Configuração do Django
-│   ├── settings.py               # Configurações gerais
-│   ├── urls.py                   # Roteamento principal
-│   ├── wsgi.py                   # Entry point WSGI
-│   └── asgi.py                   # Entry point ASGI
-│
-├── app_python/                   # Aplicação principal
-│   ├── .env                      # Variáveis de ambiente (NÃO versionado)
-│   ├── .env.example              # Template de variáveis
-│   ├── requirements.txt          # Dependências Python
-│   ├── view.py                   # Views Django (endpoints)
-│   ├── urls.py                   # Rotas da aplicação
-│   ├── supabase.py               # Configuração do Supabase
-│   ├── AdicaoExemplo.py          # Lógica de gestão de exemplos
-│   ├── Alimentacao.py            # Alimentação da base de dados
-│   ├── GerarPerguntasGendalf.py  # Geração automática de perguntas
-│   ├── TreinoGendalf.py          # Pipeline de treinamento
-│   ├── perguntas_geradas/        # Perguntas geradas (output)
-│   └── templates/                # Templates HTML da app
-│
-├── GendalfFront/                 # Frontend
-│   ├── CSS/                      # Estilos
-│   └── templates/                # Templates HTML globais
-│
-├── Docker/                       # Infraestrutura Docker
-│   ├── Dockerfile                # Imagem da aplicação
-│   └── compose.yaml              # Orquestração dos serviços
-│
-├── DetranBoasPraticas-main/      # Base de boas práticas do DETRAN
-│   ├── Aplicacao/                # Scripts de aplicação
-│   ├── Manual/                   # Manuais de referência
-│   └── DetranNorma.sql           # Schema do banco de dados
-│
-└── Manual/                       # Manual de padronização (PDF)
-```
+### 📤 4. Sincronizar Novo Manual PDF
+* **Como funciona:** Vá em "Sincronizar Manual" no menu lateral.
+* **Ação:** Arraste ou selecione o PDF oficial de diretrizes de banco de dados. Escolha se deseja manter regras antigas ou zerar a base inteira e clique em "Iniciar Sincronização". 
+* **O que acontece por trás:** Um loader animado travará a tela enquanto o Gendalf lê o arquivo inteiro de forma assíncrona, divide o texto em segmentos inteligentes, gera vetores de IA para cada segmento e atualiza a base do Supabase em segundos.
 
 ---
 
-## 🔒 Segurança
+## 🔒 Segurança e Boas Práticas
 
-Este projeto segue boas práticas de segurança. Abaixo os pontos principais:
-
-### ✅ Práticas implementadas
-
-| Prática | Detalhes |
-|---|---|
-| **Variáveis de ambiente** | Credenciais armazenadas exclusivamente em `.env`, nunca no código |
-| **`.gitignore` robusto** | Exclui `.env`, `db.sqlite3`, `__pycache__`, logs e arquivos temporários |
-| **`.env.example` versionado** | Template seguro sem credenciais reais |
-| **Usuário não-root no Docker** | Container executa como `appuser` (UID 10001) |
-| **CSRF ativado** | Middleware de proteção CSRF do Django habilitado |
-| **Clickjacking protection** | `XFrameOptionsMiddleware` habilitado |
-| **Validação de senhas** | 4 validadores de senha do Django configurados |
-
-### ⚠️ Recomendações para produção
-
-> [!WARNING]
-> Os itens abaixo **devem** ser corrigidos antes de implantar em produção:
-
-1. **`SECRET_KEY` hardcoded** — Mova a `SECRET_KEY` do Django para variáveis de ambiente:
-   ```python
-   # settings.py
-   import os
-   SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
-   if not SECRET_KEY:
-       raise ImproperlyConfigured("DJANGO_SECRET_KEY não definida.")
-   ```
-
-2. **`DEBUG = True`** — Desabilite o modo debug em produção:
-   ```python
-   DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
-   ```
-
-3. **`ALLOWED_HOSTS`** — Restrinja apenas aos domínios/IPs de produção.
-
-4. **Banco de dados** — Substitua o SQLite por PostgreSQL em produção (já disponível via Docker Compose).
-
-5. **HTTPS** — Configure TLS/SSL para todo o tráfego em produção.
-
-6. **Headers de segurança adicionais** — Considere adicionar ao `settings.py`:
-   ```python
-   SECURE_BROWSER_XSS_FILTER = True
-   SECURE_CONTENT_TYPE_NOSNIFF = True
-   SECURE_SSL_REDIRECT = True  # apenas em produção com HTTPS
-   SESSION_COOKIE_SECURE = True
-   CSRF_COOKIE_SECURE = True
-   ```
-
-7. **Rotação de credenciais** — Se as credenciais do `.env` já foram commitadas anteriormente, **rotacione todas imediatamente** (senhas do Supabase, chaves de API, SECRET_KEY).
-
----
-
-## 🤝 Contribuição
-
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/minha-feature`)
-3. Commit suas mudanças (`git commit -m 'feat: adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/minha-feature`)
-5. Abra um Pull Request
-
-> [!IMPORTANT]
-> Antes de abrir um PR, certifique-se de que nenhuma credencial ou segredo está presente no código. Utilize variáveis de ambiente para todas as configurações sensíveis.
+* **Middleware Anti-CSRF:** Todos os formulários contam com proteção nativa `{% csrf_token %}` ativada no Django.
+* **Validação de Sinks de Upload:** Arquivos não PDF são recusados imediatamente na camada HTTP para evitar injeções e ataques de RCE.
+* **Princípio do Menor Privilégio:** Conecte o Gendalf usando um usuário do banco com privilégios limitados de escrita nas tabelas da base de conhecimento (`RegraDocumental`, `ExemploPratico`, etc.) e sem permissões de administração estrutural (DCL/DDL globais).
 
 ---
 
 ## 📄 Licença
 
-Este projeto é de uso interno do DETRAN. Consulte a equipe responsável para detalhes sobre licenciamento e distribuição.
+Este projeto é de propriedade exclusiva e de uso interno do **DETRAN**. Consulte os termos da Administração de Dados para detalhes sobre distribuição externa.
 
 ---
 
 <p align="center">
-  Desenvolvido com 🧙‍♂️ pela equipe GendalfPrime
+  Desenvolvido com 🧙‍♂️ pela equipe de Adiministração de Dados do Detran-PE.
 </p>

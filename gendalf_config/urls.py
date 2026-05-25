@@ -23,8 +23,3 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("app_python.urls")),
 ]
-from django.urls import path
-
-urlpatterns = [
-    path("exemplos/adicionar/", view.adicionar_exemplo, name="adicionar_exemplo"),
-]

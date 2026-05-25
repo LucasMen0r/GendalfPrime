@@ -6,27 +6,28 @@ import psycopg2
 import pgvector.psycopg2
 import sys
 from datetime import datetime
-from dotenv import load_dotenv
 from typing import List, Tuple, Optional, Any
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-caminho_env = BASE_DIR / "app_python" / ".env"
-load_dotenv(caminho_env, override=True)
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
-db_name = os.getenv("DB_NAME", "DetranNorma")
-db_user = os.getenv("DB_USER", "postgres")
-db_pass = os.getenv("DB_PASS", "abc321")
-db_host = os.getenv("DB_HOST", "localhost")
-db_port = os.getenv("DB_PORT", "5432")
+from app_python.supabase_config import (
+    conectar_db,
+    OLLAMA_BASE_URL,
+    OLLAMA_EMBED_MODEL,
+    OLLAMA_CHAT_MODEL,
+    OLLAMA_API_EMBED,
+    OLLAMA_API_CHAT,
+)
 
-ollama_chat_model = os.getenv("OLLAMA_CHAT_MODEL", "deepseek-r1:8b")
-ollama_embed_model = os.getenv("OLLAMA_EMBED_MODEL", "bge-m3:latest")
-ollama_base_url = os.getenv("OLLAMA_BASE_URL", os.getenv("OLLAMA_HOST", f"http://{db_host}:11434"))
-
-ollama_api_embed = f"{ollama_base_url}/api/embed"
-ollama_api_chat = f"{ollama_base_url}/api/chat"
+ollama_base_url = OLLAMA_BASE_URL
+ollama_embed_model = OLLAMA_EMBED_MODEL
+ollama_chat_model = OLLAMA_CHAT_MODEL
+ollama_api_embed = OLLAMA_API_EMBED
+ollama_api_chat = OLLAMA_API_CHAT
 
 STR_CORRECTION_SYSTEM_PROMPT = """\
 Você é o G.E.N.D.A.L.F. (Gestor de Análise de Normas do Detran), um auditor rigoroso de banco de dados especializado em precisão documental, nomenclatura e conformidade técnica.
@@ -110,18 +111,10 @@ def LimparRespostaDeepSeek(textobruto: str) -> str:
     texto_limpo = re.sub(r"<tool_call>.*?</tool_call>", "", textobruto, flags=re.DOTALL)
     return texto_limpo.strip()
 
-def ConectarDB() -> Optional[Any]:
+def ConectarDB():
     try:
-        conn = psycopg2.connect(
-            dbname=db_name,
-            user=db_user,
-            password=db_pass,
-            host=db_host,
-            port=db_port,
-        )
-        pgvector.psycopg2.register_vector(conn)
-        return conn
-    except psycopg2.Error as e:
+        return conectar_db()
+    except Exception as e:
         raise RuntimeError(f"Erro de conexão com o banco: {e}") from e
 
 def Embedtexto(text: str) -> Optional[List[float]]:

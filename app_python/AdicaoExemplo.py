@@ -7,6 +7,10 @@ import pdfplumber
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
+try:
+    from .supabase_config import conectar_db
+except ImportError:
+    from supabase_config import conectar_db
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
@@ -154,17 +158,7 @@ def ProcessarPdfSemantico(caminho_pdf):
         return []
 
 def ObterConexao():
-    ##if database_url:
-        ##return psycopg2.connect(database_url, sslmode="require")
-
-    return psycopg2.connect(
-        dbname=db_name,
-        user=db_user,
-        password=db_pass,
-        host=db_host,
-        port=db_port,
-        sslmode="require"
-    )
+    return conectar_db()
 
 def main():
     try:

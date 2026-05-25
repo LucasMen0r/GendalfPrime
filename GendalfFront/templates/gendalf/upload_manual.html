@@ -1,0 +1,53 @@
+{% extends "gendalf/base.html" %}
+
+{% block title %}Gendalf · Sincronizar Manual{% endblock %}
+
+{% block nav_upload %}active{% endblock %}
+
+{% block content %}
+    <h2 style="margin-top: 0; font-size: 1.5rem; color: #cbd5e1; border-bottom: 1px solid #2d3561; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">Sincronizar Manual PDF de Diretrizes</h2>
+    
+    <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.5rem;">
+        Envie o documento oficial de Boas Práticas do Detran em formato PDF. O Gendalf lerá o manual página por página, extrairá todas as regras de nomenclatura e de negócios de forma semântica, gerará vetores de IA para cada regra e atualizará o banco de dados Supabase automaticamente.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" onsubmit="showLoader('Processando PDF, segmentando texto e indexando regras semânticas... Isso pode levar de 30 a 60 segundos.')">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="manual_pdf">Selecione o arquivo PDF oficial</label>
+            <div class="upload-zone" onclick="document.getElementById('manual_pdf').click()">
+                <div class="upload-icon">📤</div>
+                <h3 style="margin: 0; font-size: 1.15rem; color: #e2e8f0;">Clique para escolher um arquivo PDF</h3>
+                <p>Apenas arquivos oficiais `.pdf` são suportados</p>
+                <span id="file-name-display" style="display: block; margin-top: 1rem; color: #6ee7b7; font-weight: 600;"></span>
+            </div>
+            <input type="file" id="manual_pdf" name="manual_pdf" accept=".pdf" style="display: none;" required onchange="displayFileName(this)">
+        </div>
+
+        <div class="form-group">
+            <label for="remover_obsoletas">Gerenciamento de Regras Obsoletas</label>
+            <select id="remover_obsoletas" name="remover_obsoletas" class="form-control form-control-select" required>
+                <option value="N" selected>Manter regras atuais não listadas no novo PDF</option>
+                <option value="S">Substituir base inteira (Deletar regras antigas não presentes no novo PDF)</option>
+            </select>
+            <small style="color: #64748b;">A opção de substituir limpa regras antigas que deixaram de constar no novo documento enviado.</small>
+        </div>
+
+        <div class="actions" style="margin-top: 2rem;">
+            <button type="submit">Iniciar Sincronização</button>
+            <a href="{% url 'app_python:index' %}" class="button-secondary">Cancelar</a>
+        </div>
+    </form>
+
+    <script>
+        function displayFileName(input) {
+            const display = document.getElementById('file-name-display');
+            if (input.files && input.files[0]) {
+                display.textContent = 'Arquivo selecionado: ' + input.files[0].name;
+            } else {
+                display.textContent = '';
+            }
+        }
+    </script>
+{% endblock %}

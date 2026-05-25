@@ -1,10 +1,4 @@
 import re
-import time
-
-from django.shortcuts import render
-from django.views.decorators.http import require_http_methods
-
-import re
 import sys
 import time
 import tempfile
@@ -27,6 +21,8 @@ APLICACAO_DIR = BASE_DIR / "DetranBoasPraticas-main" / "Aplicacao"
 
 if str(APLICACAO_DIR) not in sys.path:
     sys.path.insert(0, str(APLICACAO_DIR))
+
+from PerguntarManual import ExecutarConsulta
 
 
 def extrair_classificacao(resposta: str) -> str:
@@ -68,6 +64,7 @@ def index(request):
         "badge_class": None,
         "erro": "",
         "tempo": None,
+        "is_admin": False,
     }
 
     if request.method == "POST":
@@ -97,44 +94,16 @@ def index(request):
         except Exception as exc:
             contexto["erro"] = f"{type(exc).__name__}: {exc}"
 
-    return render(request, "index.html", contexto)
+    return render(request, "gendalf/index.html", contexto)
 
-import tempfile
 
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.views.decorators.http import require_http_methods
+# TODO(seguranca): Adicionar @login_required ou @user_passes_test(lambda u: u.is_staff) nesta view
+def admin_index(request):
+    return render(request, "gendalf/admin_index.html", {"is_admin": True})
 
-from .AdicaoExemplo import (
-    AdicionarOuAtualizarExemploWeb,
-    RemoverExemploWeb,
-    SincronizarManualWeb,
-)
 
+# TODO(seguranca): Adicionar @login_required ou @user_passes_test(lambda u: u.is_staff) nesta view
 @require_http_methods(["GET", "POST"])
-def adicionar_exemplo(request):
-    if request.method == "POST":
-        foco = request.POST.get("foco", "")
-        texto = request.POST.get("texto", "")
-        explicacao = request.POST.get("explicacao", "")
-        is_bom = request.POST.get("is_bom") == "S"
-
-        try:
-            resultado = AdicionarOuAtualizarExemploWeb(
-                foco=foco,
-                texto=texto,
-                is_bom=is_bom,
-                explicacao=explicacao,
-            )
-
-            messages.success(request, resultado["mensagem"])
-            return redirect("adicionar_exemplo")
-
-        except Exception as e:
-            messages.error(request, f"Erro ao salvar exemplo: {e}")
-
-    return render(request, "adicao_exemplo/adicionar_exemplo.html")
-
 def adicionar_exemplo_view(request):
     if request.method == "POST":
         foco = request.POST.get("foco", "")
@@ -149,15 +118,22 @@ def adicionar_exemplo_view(request):
                 is_bom=is_bom,
                 explicacao=explicacao,
             )
+
             messages.success(request, "Exemplo salvo com sucesso na base do Gendalf.")
             return redirect("adicionar_exemplo")
 
         except Exception as e:
             messages.error(request, f"Erro ao salvar exemplo: {e}")
 
-    return render(request, "gendalf/adicionar_exemplo.html")
+    return render(request, "gendalf/adicionar_exemplo.html", {"is_admin": True})
 
 
+def adicionar_exemplo(request):
+    return adicionar_exemplo_view(request)
+
+
+# TODO(seguranca): Adicionar @login_required ou @user_passes_test(lambda u: u.is_staff) nesta view
+@require_http_methods(["GET", "POST"])
 def remover_exemplo_view(request):
     if request.method == "POST":
         foco = request.POST.get("foco", "")
@@ -176,9 +152,11 @@ def remover_exemplo_view(request):
         except Exception as e:
             messages.error(request, f"Erro ao remover exemplo: {e}")
 
-    return render(request, "gendalf/remover_exemplo.html")
+    return render(request, "gendalf/remover_exemplo.html", {"is_admin": True})
 
 
+# TODO(seguranca): Adicionar @login_required ou @user_passes_test(lambda u: u.is_staff) nesta view
+@require_http_methods(["GET", "POST"])
 def upload_manual_view(request):
     if request.method == "POST":
         arquivo = request.FILES.get("manual_pdf")
@@ -186,6 +164,11 @@ def upload_manual_view(request):
 
         if not arquivo:
             messages.error(request, "Envie um arquivo PDF.")
+            return redirect("upload_manual")
+
+        # Validação estrita de tipo de arquivo para segurança
+        if not arquivo.name.lower().endswith(".pdf"):
+            messages.error(request, "Formato de arquivo inválido. Apenas arquivos PDF (.pdf) são permitidos.")
             return redirect("upload_manual")
 
         try:
@@ -219,4 +202,4 @@ def upload_manual_view(request):
         except Exception as e:
             messages.error(request, f"Erro ao processar manual: {e}")
 
-    return render(request, "gendalf/upload_manual.html")
+    return render(request, "gendalf/upload_manual.html", {"is_admin": True})

@@ -1,0 +1,34 @@
+{% extends "gendalf/base.html" %}
+
+{% block title %}Gendalf · Remover Exemplo{% endblock %}
+
+{% block nav_remover %}active{% endblock %}
+
+{% block content %}
+    <h2 style="margin-top: 0; font-size: 1.5rem; color: #cbd5e1; border-bottom: 1px solid #2d3561; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">Remover Exemplo Prático</h2>
+    
+    <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.5rem;">
+        Utilize este painel para excluir exemplos desatualizados ou incorretos da base de conhecimento vetorial do Gendalf. O exemplo será excluído permanentemente da tabela ExemploPratico do banco Supabase.
+    </p>
+
+    <form method="post" onsubmit="showLoader('Excluindo exemplo prático do Supabase...')">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="foco">Objeto Foco</label>
+            <input type="text" id="foco" name="foco" class="form-control" placeholder="Ex: Tabela, Coluna, Procedure..." required>
+            <small style="color: #64748b;">Insira o objeto foco correspondente ao exemplo que deseja deletar.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="texto">Texto do Exemplo</label>
+            <input type="text" id="texto" name="texto" class="form-control" placeholder="Ex: ProvimentoJari, TabHistorico..." required>
+            <small style="color: #64748b;">Insira o texto exato do exemplo para realizar a exclusão.</small>
+        </div>
+
+        <div class="actions" style="margin-top: 2rem;">
+            <button type="submit" style="background: #dc2626;">Excluir Exemplo</button>
+            <a href="{% url 'app_python:index' %}" class="button-secondary">Cancelar</a>
+        </div>
+    </form>
+{% endblock %}
