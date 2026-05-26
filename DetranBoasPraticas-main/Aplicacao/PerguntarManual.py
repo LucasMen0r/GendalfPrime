@@ -276,7 +276,7 @@ def BuscarHistorico(conn, pergunta_vetor: List[float], top_k: int = 3) -> List[T
         sql = """
         SELECT nome_arquivo, conteudo_texto
         FROM ConhecimentoHistorico
-        WHERE embedding <=> %s::vector < 0.35
+        WHERE embedding <=> %s::vector < 0.45
         ORDER BY embedding <=> %s::vector
         LIMIT %s;
         """
@@ -299,7 +299,7 @@ def BuscarExemplos(conn, pergunta_vetor: List[float], foco_usuario: str, top_k: 
         sql = """
         SELECT is_BomExemplo, ExemploTexto, Explicacao
         FROM ExemploPratico
-        WHERE embedding <=> %s::vector < 0.32
+        WHERE embedding <=> %s::vector < 0.45
         ORDER BY (CASE WHEN ObjetoFoco ILIKE %s THEN 0 ELSE 1 END) ASC, embedding <=> %s::vector LIMIT %s;
         """
         cursor.execute(sql, (list(pergunta_vetor), f"%{foco_usuario}%", list(pergunta_vetor), top_k))
@@ -471,11 +471,11 @@ def ExecutarConsulta(pergunta: str) -> dict:
         todas_regras = []
 
         if len(pergunta) > 800:
-            distancia = 0.48
+            distancia = 0.55
             limite_regras = 15
             modo = "Generalista"
         else:
-            distancia = 0.32
+            distancia = 0.45
             limite_regras = 5
             modo = "Precisão"
 
