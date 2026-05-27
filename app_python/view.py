@@ -65,29 +65,35 @@ def index(request):
         "erro": "",
         "tempo": None,
         "is_admin": False,
+        "modo_professor": False,
     }
 
     if request.method == "POST":
         pergunta = request.POST.get("pergunta", "").strip()
+        modo_professor = request.POST.get("modo_professor") == "on"
+
         contexto["pergunta"] = pergunta
+        contexto["modo_professor"] = modo_professor
 
         if not pergunta:
             contexto["erro"] = "Digite uma pergunta ou texto para análise."
-            return render(request, "index.html", contexto)
+            return render(request, "gendalf/index.html", contexto)
 
         inicio = time.time()
 
         try:
-            resultado = ExecutarConsulta(pergunta)
+            resultado = ExecutarConsulta(pergunta, modo_professor=modo_professor)
             tempo = time.time() - inicio
 
             contexto["resultado"] = resultado
             contexto["tempo"] = f"{tempo:.1f}"
 
             if resultado.get("ok"):
-                classificacao = extrair_classificacao(resultado.get("resposta", ""))
-                contexto["classificacao"] = classificacao
-                contexto["badge_class"] = classe_badge(classificacao)
+                # Badge de classificação só faz sentido no modo professor/auditoria
+                if modo_professor:
+                    classificacao = extrair_classificacao(resultado.get("resposta", ""))
+                    contexto["classificacao"] = classificacao
+                    contexto["badge_class"] = classe_badge(classificacao)
             else:
                 contexto["erro"] = resultado.get("erro", "Erro desconhecido.")
 

@@ -118,11 +118,20 @@ cd GendalfPrime
 
 ### 2. Configurar Variáveis de Ambiente
 Copie o arquivo `.env.example` e preencha-o com as credenciais reais de banco de dados do Supabase e as rotas corretas do Ollama:
+
+**Linux/macOS:**
 ```bash
 cp app_python/.env.example app_python/.env
 ```
 
+**Windows (PowerShell):**
+```powershell
+Copy-Item app_python\.env.example app_python\.env
+```
+
 ### 3. Configurar Ambiente Virtual e Dependências
+
+**Linux/macOS:**
 ```bash
 # Criar o ambiente virtual python
 python3 -m venv venv
@@ -133,6 +142,21 @@ source venv/bin/activate
 # Instalar dependências necessárias
 pip install -r app_python/requirements.txt
 ```
+
+**Windows (PowerShell):**
+```powershell
+# Criar o ambiente virtual python
+python -m venv venv
+
+# Ativar o ambiente virtual
+.\venv\Scripts\Activate.ps1
+
+# Instalar dependências necessárias
+pip install -r app_python\requirements.txt
+```
+
+> [!NOTE]
+> No Windows, caso o PowerShell bloqueie a execução de scripts, rode antes: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 ### 4. Executar Servidor Django
 ```bash

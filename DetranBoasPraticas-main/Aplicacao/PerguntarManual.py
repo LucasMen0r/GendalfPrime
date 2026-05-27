@@ -49,15 +49,35 @@ USO DA MEMÓRIA PRÁTICA DE EXEMPLOS:
 - Se os exemplos apontarem uma prática e o documento oficial apontar outra, informe o conflito e priorize a regra oficial.
 
 DICIONÁRIO DE FOCO DO DETRAN:
-- "table", "tabelas", "entidade" -> Tabela
-- "column", "field", "atributo", "campo" -> Coluna
-- "proc", "procedure" -> Procedure
-- "index", "indice", "índice" -> Índice
-- "trigger", "gatilho" -> Trigger
-- "database", "banco", "banco de dados", "db" -> Banco
-- "view", "visão" -> View
-- "pk", "primary key", "chave primária" -> Primary Key
-- "fk", "foreign key", "chave estrangeira" -> Foreign Key
+        "table": "Tabela",
+        "tabela": "Tabela",
+        "tabelas": "Tabela",
+        "column": "Coluna",
+        "coluna": "Coluna",
+        "campo": "Coluna",
+        "atributo": "Coluna",
+        "procedure": "Procedure",
+        "proc": "Procedure",
+        "trigger": "Trigger",
+        "gatilho": "Trigger",
+        "indice": "Índice",
+        "índice": "Índice",
+        "index": "Índice",
+        "banco": "Banco",
+        "database": "Banco",
+        "db": "Banco",
+        "view": "View comum",
+        "visao": "View comum",
+        "visão": "View comum",
+        "pk": "pk (Primary Key)",
+        "primary key": "pk (Primary Key)",
+        "chave primaria": "pk (Primary Key)",
+        "chave primária": "pk (Primary Key)",
+        "fk": "fk (Foreign Key)",
+        "foreign key": "fk (Foreign Key)",
+        "chave estrangeira": "fk (Foreign Key)",
+        "unique": "Unique",
+        "check": "Check",
 
 DIRETRIZES DE AVALIAÇÃO:
 1. Precisão: cite a regra, exemplo ou trecho exato usado na justificativa.
@@ -80,6 +100,14 @@ CLASSIFICAÇÃO PERMITIDA:
 - Incorreto
 - Não verificável
 
+MODO PROFESSOR/AUDITORIA:
+- Sua função principal é auditar nomenclatura e conformidade técnica de objetos de banco.
+- Quando o usuário fornecer SQL, DDL, nome de objeto ou trecho de código, não responda apenas de forma explicativa: emita juízo técnico.
+- Classifique cada objeto analisável como Correto, Parcialmente Correto, Incorreto ou Não verificável.
+- Se houver pelo menos uma regra diretamente aplicável ao objeto, não use "Não verificável" para o objeto inteiro; emita juízo limitado à regra disponível e declare o escopo da análise.
+- Use "Não verificável" somente quando nenhuma regra recuperada permitir avaliar o objeto.
+- Se a entrada contiver múltiplos objetos, analise cada componente relevante separadamente.
+
 TRECHOS DO DOCUMENTO E MEMÓRIAS PRÁTICAS:
 {strContext}
 """
@@ -98,10 +126,54 @@ Retorne sua análise em Markdown neste formato:
 4. **ERROS OU RISCOS:** liste cada erro, inconsistência, ausência de evidência ou risco técnico identificado.
 5. **EXPLICAÇÃO:** explique cada ponto com base nos trechos recuperados e/ou exemplos práticos recuperados, sem inventar regras.
 6. **SUGESTÃO DE CORREÇÃO:** proponha ajuste técnico apenas quando houver base documental ou exemplo prático compatível suficiente.
-7. **REFERÊNCIAS:** indique regra/documento/exemplo usado como fundamento.
+7. **REFERÊNCIAS:** indique a regra usada como fundamento. Se a regra contiver metadados de fonte no formato `[Fonte: arquivo, página N, seção S]`, cite-os literalmente (ex.: "Manual de Nomenclatura, página 10, seção 3.3 Colunas"). Se a fonte não estiver disponível no texto da regra, escreva "fonte não informada no banco" — nunca invente número de página.
 8. **VERSÃO CORRIGIDA:** reescreva o texto ou objeto quando possível; se não for possível, diga que a correção não é verificável com os trechos disponíveis.
 
-Se não houver regras ou exemplos aplicáveis nos trechos fornecidos, responda que não localizou evidência suficiente no banco de conhecimento para validar o objeto com segurança.
+Use "Não verificável" somente quando nenhuma regra, exemplo ou histórico recuperado permitir avaliar o objeto analisado.
+
+Se houver ao menos uma regra diretamente aplicável ao objeto analisado, emita juízo técnico limitado àquela regra: Correto, Parcialmente Correto ou Incorreto. Quando o contexto for parcial, informe quais aspectos foram verificados e quais não puderam ser validados.
+
+Não deixe de sugerir correção quando houver regra documental recuperada que sustente a correção.
+"""
+
+# ──────────────────────────────────────────────
+# PROMPTS DO MODO TEÓRICO
+# Usados quando modo_professor=False.
+# O Gendalf responde perguntas conceituais com
+# base no manual, sem auditar nem classificar.
+# ──────────────────────────────────────────────
+
+STR_TEORICO_SYSTEM_PROMPT = """\
+Você é o G.E.N.D.A.L.F. (Gestor de Análise de Normas do Detran), um consultor especializado em normas de banco de dados do DETRAN.
+
+Sua tarefa atual é RESPONDER PERGUNTAS COM BASE NO MANUAL — não auditar, não classificar conformidade, não sugerir correções não solicitadas.
+
+REGRAS OBRIGATÓRIAS NESTE MODO:
+1. Responda apenas o que foi perguntado, usando os trechos do documento oficial como base.
+2. NÃO classifique nada como Correto, Incorreto, Parcialmente Correto ou Não verificável.
+3. NÃO emita juízo técnico sobre código, DDL, SQL ou nome de objeto fornecido pelo usuário.
+4. Se o usuário incluir código/DDL/SQL, trate como exemplo contextual da pergunta — não como objeto a auditar.
+5. NÃO sugira versão corrigida nem renomeação, a menos que o usuário peça explicitamente.
+6. Baseie sua resposta estritamente nos trechos recuperados. Se nenhum trecho cobrir a pergunta, diga que a informação não foi encontrada no manual carregado.
+7. Zero alucinação: não invente regra, padrão ou convenção que não esteja nos trechos.
+
+FORMATO DE RESPOSTA:
+1. **Resposta direta** à pergunta
+2. **Regra do manual aplicável** (cite o trecho ou fonte, se disponível)
+3. **Observação**, se necessária (ex.: limitação de contexto, conflito entre trechos)
+
+TRECHOS DO DOCUMENTO E MEMÓRIAS PRÁTICAS:
+{strContext}
+"""
+
+STR_TEORICO_USER_PROMPT = """\
+Pergunta do usuário:
+\"\"\"
+{strUserText}
+\"\"\"
+
+Responda de forma objetiva com base nos trechos do manual. Não audite, não classifique conformidade, não sugira correções não solicitadas.
+Se houver código ou DDL no texto, use-o apenas como contexto para entender a pergunta.
 """
 
 def LimparRespostaDeepSeek(textobruto: str) -> str:
@@ -174,6 +246,11 @@ def ClassificarPergunta(pergunta: str) -> str:
         return "GERAL"
 
 def ExtrairFoco(pergunta: str) -> str:
+    # Mapeamento determinístico para FK (LLM local falha nesse caso)
+    texto_lower = (pergunta or "").lower()
+    if any(t in texto_lower for t in ["foreign key", "chave estrangeira", " fk ", "fk_", "nomeação de fk", "nomear fk", "nomear chave estrangeira", "nomear a chave estrangeira"]):
+        return "Foreign Key"
+
     prompt = f"""
     Aja como um classificador de banco de dados.
     Sua tarefa: Identificar o objeto principal da pergunta e converter para o termo padrão do Detran.
@@ -184,6 +261,10 @@ def ExtrairFoco(pergunta: str) -> str:
     - "proc", "procedure" -> Procedure
     - "index", "indice" -> Índice
     - "trigger", "gatilho" -> Trigger
+    - "fk", "foreign key", "chave estrangeira" -> Foreign Key
+    - "pk", "primary key", "chave primária" -> Primary Key
+    - "view", "visão" -> View
+    - "banco", "database", "db" -> Banco
     
     Pergunta: "{pergunta}"
     Resposta (apenas uma palavra/termo):
@@ -217,28 +298,44 @@ def EncontrarRegras(
 
     try:
         sql_base = """
-        select r.DescricaoRegra
-        from RegraNomenclatura r
-        join CategoriaRegra c
-          on r.pkCategoriaRegra = c.pkCategoriaRegra
-        left join ObjetoDb o
-          on r.pkObjetoDb = o.pkObjetoDb
+        SELECT
+            CONCAT(
+                '[Categoria: ', c.NomeCategoria,
+                ' | Objeto: ', COALESCE(o.NomeObjeto, 'GERAL'),
+                ' | Distância: ', ROUND((r.embedding <=> %s::vector)::numeric, 4),
+                '] ',
+                r.DescricaoRegra
+            ) AS regra_contextualizada,
+            c.NomeCategoria,
+            COALESCE(o.NomeObjeto, 'GERAL') AS NomeObjeto,
+            r.embedding <=> %s::vector AS distancia
+        FROM RegraNomenclatura r
+        JOIN CategoriaRegra c
+          ON r.pkCategoriaRegra = c.pkCategoriaRegra
+        LEFT JOIN ObjetoDb o
+          ON r.pkObjetoDb = o.pkObjetoDb
         """
-   ##"como nomear uma table?" 
+
         filtro_distancia = " r.embedding <=> %s::vector < %s "
 
         order_clause = """
-        order by
-            case when o.NomeObjeto ilike %s then 0 else 1 end asc,
-            r.embedding <=> %s::vector asc
-        limit %s;
+        ORDER BY
+            CASE
+                WHEN o.NomeObjeto ILIKE %s THEN 0
+                WHEN o.NomeObjeto IS NULL THEN 1
+                ELSE 2
+            END ASC,
+            r.embedding <=> %s::vector ASC
+        LIMIT %s;
         """
 
         term_boost = f"%{foco_usuario}%"
 
         if "GERAL" in nome_categoria.upper():
-            sql = sql_base + " where " + filtro_distancia + order_clause
+            sql = sql_base + " WHERE " + filtro_distancia + order_clause
             params = (
+                list(pergunta_vetor),
+                list(pergunta_vetor),
                 list(pergunta_vetor),
                 limite_distancia,
                 term_boost,
@@ -246,8 +343,10 @@ def EncontrarRegras(
                 top_k,
             )
         else:
-            sql = sql_base + " where c.NomeCategoria ilike %s and " + filtro_distancia + order_clause
+            sql = sql_base + " WHERE c.NomeCategoria ILIKE %s AND " + filtro_distancia + order_clause
             params = (
+                list(pergunta_vetor),
+                list(pergunta_vetor),
                 f"%{nome_categoria}%",
                 list(pergunta_vetor),
                 limite_distancia,
@@ -257,11 +356,204 @@ def EncontrarRegras(
             )
 
         cursor.execute(sql, params)
-        return cursor.fetchall()
+
+        # Mantém compatibilidade com MontarContextoGendalf:
+        # retorna lista de tuplas, com a regra no índice [0].
+        linhas = cursor.fetchall()
+        return [(linha[0],) for linha in linhas]
 
     except Exception as e:
         conn.rollback()
         raise RuntimeError(f"Falha ao buscar regras: {e}") from e
+
+    finally:
+        cursor.close()
+
+def BuscarRegrasPorObjeto(conn, foco_usuario: str, limite: int = 10) -> List[Tuple]:
+    cursor = conn.cursor()
+
+    try:
+        foco_usuario = (foco_usuario or "").strip()
+
+        if not foco_usuario:
+            return []
+
+        sql = """
+        SELECT
+            CONCAT(
+                '[Categoria: ', c.NomeCategoria,
+                ' | Objeto: ', COALESCE(o.NomeObjeto, 'GERAL'),
+                '] ',
+                r.DescricaoRegra
+            ) AS regra_contextualizada
+        FROM RegraNomenclatura r
+        JOIN CategoriaRegra c
+          ON r.pkCategoriaRegra = c.pkCategoriaRegra
+        LEFT JOIN ObjetoDb o
+          ON r.pkObjetoDb = o.pkObjetoDb
+        WHERE
+            o.NomeObjeto ILIKE %s
+            OR o.NomeObjeto IS NULL
+        ORDER BY
+            CASE
+                WHEN o.NomeObjeto ILIKE %s THEN 0
+                WHEN o.NomeObjeto IS NULL THEN 1
+                ELSE 2
+            END,
+            r.pkRegraNomenclatura
+        LIMIT %s;
+        """
+
+        foco_like = f"%{foco_usuario}%"
+
+        cursor.execute(
+            sql,
+            (
+                foco_like,
+                foco_like,
+                limite,
+            )
+        )
+
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+
+def DeduplicataRegras(regras: List) -> List:
+    """Remove duplicatas de regras mantendo a ordem de prioridade."""
+    vistas = set()
+    resultado = []
+
+    for regra in regras:
+        if not regra:
+            continue
+
+        texto = str(regra[0] or "").strip()
+
+        if not texto:
+            continue
+
+        if texto not in vistas:
+            vistas.add(texto)
+            resultado.append(regra)
+
+    return resultado
+
+def EhAuditoria(pergunta: str) -> bool:
+    """Detecta se a pergunta é uma auditoria/correção de objeto de banco, não apenas teórica."""
+    texto = (pergunta or "").lower()
+
+    sinais_auditoria = [
+        "corrigir",
+        "correção",
+        "correcao",
+        "validar",
+        "analisar",
+        "analise",
+        "auditar",
+        "auditoria",
+        "está correto",
+        "esta correto",
+        "está correta",
+        "esta correta",
+        "está certo",
+        "esta certo",
+        "está errado",
+        "esta errado",
+        "está errada",
+        "esta errada",
+        "incorreto",
+        "incorreta",
+        "precisa corrigir",
+        "preciso corrigir",
+        "não conforme",
+        "nao conforme",
+        "script",
+        "código",
+        "codigo",
+        "ddl",
+        "create ",
+        "alter ",
+        "declare ",
+        "begin",
+        "end",
+        "@",
+        ";",
+        "\n",
+    ]
+
+    return len(pergunta or "") > 800 or any(sinal in texto for sinal in sinais_auditoria)
+
+def BuscarRegrasObrigatoriasAuditoria(conn, foco_usuario: str, limite: int = 20) -> List[Tuple]:
+    cursor = conn.cursor()
+
+    try:
+        sql = """
+        SELECT
+            CONCAT(
+                '[Categoria: ', c.NomeCategoria,
+                ' | Objeto: ', COALESCE(o.NomeObjeto, 'GERAL'),
+                '] ',
+                r.DescricaoRegra,
+                CASE
+                    WHEN r.fonte_arquivo IS NOT NULL
+                    THEN CONCAT(
+                        ' [Fonte: ', r.fonte_arquivo,
+                        CASE WHEN r.fonte_pagina IS NOT NULL
+                             THEN CONCAT(', página ', r.fonte_pagina)
+                             ELSE '' END,
+                        CASE WHEN r.fonte_secao IS NOT NULL
+                             THEN CONCAT(', seção ', r.fonte_secao)
+                             ELSE '' END,
+                        ']'
+                    )
+                    ELSE ''
+                END
+            ) AS regra_contextualizada
+        FROM RegraNomenclatura r
+        JOIN CategoriaRegra c
+          ON r.pkCategoriaRegra = c.pkCategoriaRegra
+        LEFT JOIN ObjetoDb o
+          ON r.pkObjetoDb = o.pkObjetoDb
+        WHERE
+            c.NomeCategoria ILIKE 'Regras Gerais'
+            OR o.NomeObjeto ILIKE %s
+            OR (
+                %s ILIKE 'Coluna'
+                AND c.NomeCategoria IN ('Tipos de Dados', 'Atributos Comuns')
+            )
+            OR (
+                %s ILIKE 'Tabela'
+                AND c.NomeCategoria ILIKE 'Nomenclatura de Objetos'
+            )
+            OR (
+                %s ILIKE 'Procedure'
+                AND c.NomeCategoria IN ('Nomenclatura de Objetos', 'Regra especial')
+            )
+        ORDER BY
+            CASE
+                WHEN o.NomeObjeto ILIKE %s THEN 0
+                WHEN c.NomeCategoria ILIKE 'Regras Gerais' THEN 1
+                ELSE 2
+            END,
+            r.pkRegraNomenclatura
+        LIMIT %s;
+        """
+
+        cursor.execute(
+            sql,
+            (
+                f"%{foco_usuario}%",
+                foco_usuario,
+                foco_usuario,
+                foco_usuario,
+                f"%{foco_usuario}%",
+                limite,
+            )
+        )
+
+        return cursor.fetchall()
 
     finally:
         cursor.close()
@@ -311,7 +603,33 @@ def BuscarExemplos(conn, pergunta_vetor: List[float], foco_usuario: str, top_k: 
         if cursor:
             cursor.close()
 
-def PerguntaOllama(pergunta: str, contexto_regras: List, ExemploPratico: List, historico_testes: List) -> str:
+def LimitarRegrasParaLLM(regras: List[Tuple], modo_professor: bool = False) -> List[Tuple]:
+    """
+    Reduz o contexto enviado ao LLM para evitar timeout.
+    Mantém as primeiras regras, que já estão ordenadas por prioridade.
+    """
+    limite_regras = 12 if modo_professor else 6
+    limite_chars_por_regra = 700 if modo_professor else 500
+
+    regras_limitadas = []
+
+    for regra in regras[:limite_regras]:
+        if not regra:
+            continue
+
+        texto = str(regra[0] or "").strip()
+
+        if not texto:
+            continue
+
+        if len(texto) > limite_chars_por_regra:
+            texto = texto[:limite_chars_por_regra].rstrip() + "..."
+
+        regras_limitadas.append((texto,))
+
+    return regras_limitadas
+
+def PerguntaOllama(pergunta: str, contexto_regras: List, ExemploPratico: List, historico_testes: List, modo_professor: bool = False) -> str:
     print("\n" + "=" * 10)
     print(f"[DEBUG] Regras totais recuperadas do Banco: {len(contexto_regras)}")
 
@@ -327,20 +645,30 @@ def PerguntaOllama(pergunta: str, contexto_regras: List, ExemploPratico: List, h
     print(" RESPOSTA DO G.E.N.D.A.L.F:")
     print("#" * 15)
 
+    contexto_regras_llm = LimitarRegrasParaLLM(contexto_regras, modo_professor)
+
     str_contexto = MontarContextoGendalf(
-        contexto_regras=contexto_regras,
+        contexto_regras=contexto_regras_llm,
         exemplos_praticos=ExemploPratico,
         historico_testes=historico_testes,
     )
 
+    # Seleciona o par de prompts conforme o modo
+    if modo_professor:
+        system_prompt = STR_CORRECTION_SYSTEM_PROMPT.format(strContext=str_contexto)
+        user_prompt = STR_CORRECTION_USER_PROMPT.format(strUserText=pergunta)
+    else:
+        system_prompt = STR_TEORICO_SYSTEM_PROMPT.format(strContext=str_contexto)
+        user_prompt = STR_TEORICO_USER_PROMPT.format(strUserText=pergunta)
+
     mensagens = [
         {
             "role": "system",
-            "content": STR_CORRECTION_SYSTEM_PROMPT.format(strContext=str_contexto),
+            "content": system_prompt,
         },
         {
             "role": "user",
-            "content": STR_CORRECTION_USER_PROMPT.format(strUserText=pergunta),
+            "content": user_prompt,
         },
     ]
 
@@ -355,11 +683,12 @@ def PerguntaOllama(pergunta: str, contexto_regras: List, ExemploPratico: List, h
                 "stream": True,
                 "options": {
                     "temperature": 0,
-                    "num_ctx": 8192,
+                    "num_ctx": 4096,
+                    "num_predict": 900 if modo_professor else 500,
                 },
             },
             stream=True,
-            timeout=360,
+            timeout=(10, 900),
         )
 
         resposta.raise_for_status()
@@ -444,8 +773,8 @@ def SalvarRespostas(pergunta: str, categoria: str, resposta: str) -> None:
             json.dump(registros, f, ensure_ascii=False, indent=4)
     except Exception: pass
     
-def ExecutarConsulta(pergunta: str) -> dict:
-    
+def ExecutarConsulta(pergunta: str, modo_professor: bool = False) -> dict:
+
     conn = ConectarDB()
     if not conn:
         return {
@@ -468,17 +797,26 @@ def ExecutarConsulta(pergunta: str) -> dict:
                 "foco": foco
             }
 
-        todas_regras = []
-
-        if len(pergunta) > 800:
+        # --- Decidir modo de operação com base exclusivamente no checkbox ---
+        # A presença de SQL/DDL NÃO ativa modo professor sozinha.
+        if modo_professor and len(pergunta) > 800:
+            distancia = 0.60
+            limite_regras = 18
+            modo = "Professor Amplo"
+        elif modo_professor:
             distancia = 0.55
-            limite_regras = 15
-            modo = "Generalista"
+            limite_regras = 8
+            modo = "Professor"
+        elif len(pergunta) > 800:
+            distancia = 0.50
+            limite_regras = 8
+            modo = "Teórico com contexto longo"
         else:
             distancia = 0.45
             limite_regras = 5
-            modo = "Precisão"
+            modo = "Teórico"
 
+        # --- Busca vetorial principal ---
         regras_principais = EncontrarRegras(
             conn,
             vetor_completo,
@@ -488,6 +826,7 @@ def ExecutarConsulta(pergunta: str) -> dict:
             limite_distancia=distancia
         )
 
+        # --- Busca vetorial extra por tipo de objeto ---
         regras_extras = []
 
         if foco in ["Tabela", "Coluna", "Table", "Column"]:
@@ -509,19 +848,45 @@ def ExecutarConsulta(pergunta: str) -> dict:
                 limite_distancia=distancia
             )
 
-        todas_regras.extend(regras_principais + regras_extras)
+        # --- Pacote obrigatório de auditoria: somente quando modo_professor=True ---
+        # No modo teórico não carregamos o pacote obrigatório para manter a resposta enxuta.
+        regras_obrigatorias = []
 
-        if not todas_regras:
-            todas_regras = EncontrarRegras(
+        foco_tem_objeto = bool(foco and foco.strip() and foco.upper() not in ("GERAL", ""))
+
+        if modo_professor and foco_tem_objeto:
+            regras_obrigatorias = BuscarRegrasObrigatoriasAuditoria(
+                conn,
+                foco,
+                limite=10
+            )
+
+        # --- Consolidar e deduplicar por ordem de prioridade ---
+        todas_regras = DeduplicataRegras(
+            regras_obrigatorias + regras_principais + regras_extras
+        )
+
+        # --- Fallback com mínimo diferenciado por modo ---
+        minimo_contexto = 6 if modo_professor else 2
+
+        if len(todas_regras) < minimo_contexto:
+            regras_fallback = EncontrarRegras(
                 conn,
                 vetor_completo,
                 "GERAL",
                 foco,
-                top_k=limite_regras,
-                limite_distancia=distancia
+                top_k=10 if modo_professor else limite_regras,
+                limite_distancia=0.60 if modo_professor else 0.50
             )
+            todas_regras = DeduplicataRegras(todas_regras + regras_fallback)
 
-        todas_regras = list(dict.fromkeys(todas_regras))
+        print("[DEBUG] modo_professor:", modo_professor)
+        print("[DEBUG] modo:", modo)
+        print("[DEBUG] categoria:", categoria)
+        print("[DEBUG] foco:", foco)
+        print("[DEBUG] distancia:", distancia)
+        print("[DEBUG] regras_recuperadas:", len(todas_regras))
+        print("[DEBUG] primeiras_regras:", todas_regras[:5])
 
         exemplos_praticos = BuscarExemplos(conn, vetor_completo, foco)
         historico_testes = BuscarHistorico(conn, vetor_completo)
@@ -530,7 +895,8 @@ def ExecutarConsulta(pergunta: str) -> dict:
             pergunta,
             todas_regras,
             exemplos_praticos,
-            historico_testes
+            historico_testes,
+            modo_professor=modo_professor
         )
 
         SalvarRespostas(pergunta, categoria, resposta_final)
@@ -542,6 +908,7 @@ def ExecutarConsulta(pergunta: str) -> dict:
             "categoria": categoria,
             "foco": foco,
             "modo": modo,
+            "modo_professor": modo_professor,
             "qtd_regras": len(todas_regras),
             "qtd_exemplos": len(exemplos_praticos),
             "qtd_historico": len(historico_testes),
@@ -549,7 +916,7 @@ def ExecutarConsulta(pergunta: str) -> dict:
 
     finally:
         conn.close()
-        
+
 def MontarContextoGendalf(contexto_regras: List, exemplos_praticos: List, historico_testes: List) -> str:
     blocos = []
 
@@ -597,13 +964,21 @@ def MontarContextoGendalf(contexto_regras: List, exemplos_praticos: List, histor
     return "\n\n" + ("-" * 60) + "\n\n".join(blocos)
 
 def main():
-    if len(sys.argv) < 2:
-        print('\nExemplo de uso: Pergunta: "Posso usar o nome Cliente para uma tabela?"')
+    # Suporte à flag --professor na linha de comando.
+    # Exemplos:
+    #   python PerguntarManual.py "como nomear uma trigger?"
+    #   python PerguntarManual.py --professor "essa tabela está correta?"
+    modo_professor = "--professor" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--professor"]
+
+    if not args:
+        print('\nExemplo de uso: python PerguntarManual.py "Posso usar o nome Cliente para uma tabela?"')
+        print('Modo professor: python PerguntarManual.py --professor "essa tabela está correta?"')
         pergunta = input("Pergunta: ")
     else:
-        pergunta = sys.argv[1]
+        pergunta = args[0]
 
-    resultado = ExecutarConsulta(pergunta)
+    resultado = ExecutarConsulta(pergunta, modo_professor=modo_professor)
 
     if resultado["ok"]:
         print(resultado["resposta"])

@@ -43,112 +43,127 @@ def LimparTela():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def ProcessarPdfSemantico(caminho_pdf):
+    """Extrai regras do PDF preservando número de página e seção para rastreabilidade."""
     caminho = Path(caminho_pdf)
-    
+    nome_arquivo = caminho.name
+
     if not caminho.is_file():
         print(f"[ERRO] Arquivo não encontrado ou caminho inválido: {caminho}")
         return []
 
     try:
-        paginas_extraidas = []
-        with pdfplumber.open(caminho) as pdf:
-            for page in pdf.pages:
-                texto_extraido = page.extract_text()
-                if texto_extraido:
-                    paginas_extraidas.append(texto_extraido)
-        
-        texto_completo = "\n".join(paginas_extraidas)
-        
         regras_extraidas = []
         categoria_atual = None
         objeto_atual = None
+        secao_atual = None       # rótulo da seção/capítulo atual (ex: "3.3 Colunas")
+        pagina_atual = None      # número da página onde a seção começou
         buffer_texto = ""
 
-        linhas = texto_completo.split('\n')
-
-        regex_regras_gerais = re.compile(r'^2\.\s*Regras\s*Gerais', re.IGNORECASE)
-        regex_banco = re.compile(r'^3\.1\s*Banco\s*de\s*Dados', re.IGNORECASE)
-        regex_tabelas = re.compile(r'^3\.2\s*Tabelas', re.IGNORECASE)
-        regex_colunas = re.compile(r'^3\.3\s*Colunas', re.IGNORECASE)
-        regex_procedures = re.compile(r'^3\.7\s*Procedures', re.IGNORECASE)
-        regex_boas_praticas = re.compile(r'^5\.\s*Recomendações', re.IGNORECASE)
-        regex_manual_bolso = re.compile(r'^2\.6\s*Padrão\s*de\s*nomes', re.IGNORECASE)
-        regex_dicionario = re.compile(r'^6\.\s*Dicionário\s*de\s*Termos', re.IGNORECASE)
+        regex_regras_gerais  = re.compile(r'^2\.\s*Regras\s*Gerais', re.IGNORECASE)
+        regex_banco          = re.compile(r'^3\.1\s*Banco\s*de\s*Dados', re.IGNORECASE)
+        regex_tabelas        = re.compile(r'^3\.2\s*Tabelas', re.IGNORECASE)
+        regex_colunas        = re.compile(r'^3\.3\s*Colunas', re.IGNORECASE)
+        regex_procedures     = re.compile(r'^3\.7\s*Procedures', re.IGNORECASE)
+        regex_boas_praticas  = re.compile(r'^5\.\s*Recomendações', re.IGNORECASE)
+        regex_manual_bolso   = re.compile(r'^2\.6\s*Padrão\s*de\s*nomes', re.IGNORECASE)
+        regex_dicionario     = re.compile(r'^6\.\s*Dicionário\s*de\s*Termos', re.IGNORECASE)
 
         def salvar_buffer():
             nonlocal buffer_texto, regras_extraidas, categoria_atual, objeto_atual
             texto_limpo = buffer_texto.strip()
-            
+
             if texto_limpo and categoria_atual and categoria_atual != 'Ignorar':
                 if categoria_atual == 'Regras Gerais':
                     texto_limpo = re.sub(r'^[\W_]\s*', '', texto_limpo).strip()
-                
+
                 if len(texto_limpo) > 15 and not texto_limpo.lower().startswith('exemplo'):
                     regras_extraidas.append({
-                        'categoria': categoria_atual,
-                        'objeto': objeto_atual,
-                        'texto': texto_limpo
+                        'categoria':     categoria_atual,
+                        'objeto':        objeto_atual,
+                        'texto':         texto_limpo,
+                        'fonte_arquivo': nome_arquivo,
+                        'fonte_pagina':  pagina_atual,
+                        'fonte_secao':   secao_atual,
+                        'fonte_titulo':  secao_atual,   # título = rótulo da seção
                     })
             buffer_texto = ""
-            
-        for linha in linhas:
-            linha = linha.strip()
-            if not linha:
-                continue
 
-            if regex_regras_gerais.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Regras Gerais'
-                objeto_atual = None
-                continue
-            elif regex_manual_bolso.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Ignorar'
-                continue
-            elif regex_banco.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Nomenclatura de Objetos'
-                objeto_atual = 'Banco'
-                continue
-            elif regex_tabelas.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Nomenclatura de Objetos'
-                objeto_atual = 'Tabela'
-                continue
-            elif regex_colunas.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Nomenclatura de Objetos'
-                objeto_atual = 'Coluna'
-                continue
-            elif regex_procedures.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Nomenclatura de Objetos'
-                objeto_atual = 'Procedure'
-                continue
-            elif regex_boas_praticas.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Boas Práticas'
-                objeto_atual = None
-                continue
-            elif regex_dicionario.match(linha):
-                salvar_buffer()
-                categoria_atual = 'Ignorar'
-                continue
+        with pdfplumber.open(caminho) as pdf:
+            for num_pagina, page in enumerate(pdf.pages, start=1):
+                texto_extraido = page.extract_text()
+                if not texto_extraido:
+                    continue
 
-            if categoria_atual == 'Ignorar' or not categoria_atual:
-                continue
+                for linha in texto_extraido.split('\n'):
+                    linha = linha.strip()
+                    if not linha:
+                        continue
 
-            if linha.startswith('DETRAN-PE') or linha.startswith('Página'):
-                continue
-                
-            regex_sql = r'^(CREATE\s|DECLARE\s|SELECT\s|FROM\s|WHERE\s|EXEC\s|IF\s|DROP\s|BEGIN\b|END\b|AS$|GO$|@|//|/\*)'
-            if re.match(regex_sql, linha, re.IGNORECASE):
-                continue
+                    if regex_regras_gerais.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Regras Gerais'
+                        objeto_atual    = None
+                        secao_atual     = '2. Regras Gerais'
+                        pagina_atual    = num_pagina
+                        continue
+                    elif regex_manual_bolso.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Ignorar'
+                        continue
+                    elif regex_banco.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Nomenclatura de Objetos'
+                        objeto_atual    = 'Banco'
+                        secao_atual     = '3.1 Banco de Dados'
+                        pagina_atual    = num_pagina
+                        continue
+                    elif regex_tabelas.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Nomenclatura de Objetos'
+                        objeto_atual    = 'Tabela'
+                        secao_atual     = '3.2 Tabelas'
+                        pagina_atual    = num_pagina
+                        continue
+                    elif regex_colunas.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Nomenclatura de Objetos'
+                        objeto_atual    = 'Coluna'
+                        secao_atual     = '3.3 Colunas'
+                        pagina_atual    = num_pagina
+                        continue
+                    elif regex_procedures.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Nomenclatura de Objetos'
+                        objeto_atual    = 'Procedure'
+                        secao_atual     = '3.7 Procedures'
+                        pagina_atual    = num_pagina
+                        continue
+                    elif regex_boas_praticas.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Boas Práticas'
+                        objeto_atual    = None
+                        secao_atual     = '5. Recomendações'
+                        pagina_atual    = num_pagina
+                        continue
+                    elif regex_dicionario.match(linha):
+                        salvar_buffer()
+                        categoria_atual = 'Ignorar'
+                        continue
 
-            buffer_texto = buffer_texto + " " + linha if buffer_texto else linha
+                    if categoria_atual == 'Ignorar' or not categoria_atual:
+                        continue
 
-            if linha.endswith('.') or linha.endswith(';') or linha.endswith(':'):
-                salvar_buffer()
+                    if linha.startswith('DETRAN-PE') or linha.startswith('Página'):
+                        continue
+
+                    regex_sql = r'^(CREATE\s|DECLARE\s|SELECT\s|FROM\s|WHERE\s|EXEC\s|IF\s|DROP\s|BEGIN\b|END\b|AS$|GO$|@|//|/\*)'
+                    if re.match(regex_sql, linha, re.IGNORECASE):
+                        continue
+
+                    buffer_texto = buffer_texto + " " + linha if buffer_texto else linha
+
+                    if linha.endswith('.') or linha.endswith(';') or linha.endswith(':'):
+                        salvar_buffer()
 
         salvar_buffer()
         return regras_extraidas
@@ -368,6 +383,12 @@ def main():
                         nome_objeto = regra.get("objeto", "").lower() if regra.get("objeto") else None
                         texto_regra = regra.get("texto")
 
+                        # Metadados de fonte (rastreabilidade)
+                        fonte_arq  = regra.get("fonte_arquivo")
+                        fonte_pag  = regra.get("fonte_pagina")
+                        fonte_sec  = regra.get("fonte_secao")
+                        fonte_tit  = regra.get("fonte_titulo")
+
                         pk_categoria = mapa_categorias.get(nome_categoria)
 
                         if not pk_categoria:
@@ -398,11 +419,19 @@ def main():
                                 UPDATE RegraNomenclatura
                                 SET
                                     ultima_verificacao = %s,
-                                    embedding = %s
+                                    embedding = %s,
+                                    fonte_arquivo = COALESCE(%s, fonte_arquivo),
+                                    fonte_pagina  = COALESCE(%s, fonte_pagina),
+                                    fonte_secao   = COALESCE(%s, fonte_secao),
+                                    fonte_titulo  = COALESCE(%s, fonte_titulo)
                                 WHERE pkRegraNomenclatura = %s;
                             """, (
                                 inicio_sincronizacao,
                                 embedding,
+                                fonte_arq,
+                                fonte_pag,
+                                fonte_sec,
+                                fonte_tit,
                                 regra_existente[0]
                             ))
 
@@ -416,16 +445,24 @@ def main():
                                         pkObjetoDb,
                                         DescricaoRegra,
                                         embedding,
-                                        ultima_verificacao
+                                        ultima_verificacao,
+                                        fonte_arquivo,
+                                        fonte_pagina,
+                                        fonte_secao,
+                                        fonte_titulo
                                     )
                                 VALUES
-                                    (%s, %s, %s, %s, %s);
+                                    (%s, %s, %s, %s, %s, %s, %s, %s, %s);
                             """, (
                                 pk_categoria,
                                 pk_objeto,
                                 texto_regra,
                                 embedding,
-                                inicio_sincronizacao
+                                inicio_sincronizacao,
+                                fonte_arq,
+                                fonte_pag,
+                                fonte_sec,
+                                fonte_tit,
                             ))
 
                             inseridas += 1
@@ -666,6 +703,12 @@ def SincronizarManualWeb(caminho_pdf, remover_obsoletas=False):
                 nome_objeto = regra.get("objeto", "").lower() if regra.get("objeto") else None
                 texto_regra = regra.get("texto")
 
+                # Metadados de fonte (rastreabilidade)
+                fonte_arq  = regra.get("fonte_arquivo")
+                fonte_pag  = regra.get("fonte_pagina")
+                fonte_sec  = regra.get("fonte_secao")
+                fonte_tit  = regra.get("fonte_titulo")
+
                 pk_categoria = mapa_categorias.get(nome_categoria)
 
                 if not pk_categoria:
@@ -698,11 +741,19 @@ def SincronizarManualWeb(caminho_pdf, remover_obsoletas=False):
                         UPDATE RegraNomenclatura
                         SET
                             ultima_verificacao = %s,
-                            embedding = %s
+                            embedding = %s,
+                            fonte_arquivo = COALESCE(%s, fonte_arquivo),
+                            fonte_pagina  = COALESCE(%s, fonte_pagina),
+                            fonte_secao   = COALESCE(%s, fonte_secao),
+                            fonte_titulo  = COALESCE(%s, fonte_titulo)
                         WHERE pkRegraNomenclatura = %s;
                     """, (
                         inicio_sincronizacao,
                         embedding,
+                        fonte_arq,
+                        fonte_pag,
+                        fonte_sec,
+                        fonte_tit,
                         regra_existente[0]
                     ))
 
@@ -716,16 +767,24 @@ def SincronizarManualWeb(caminho_pdf, remover_obsoletas=False):
                                 pkObjetoDb,
                                 DescricaoRegra,
                                 embedding,
-                                ultima_verificacao
+                                ultima_verificacao,
+                                fonte_arquivo,
+                                fonte_pagina,
+                                fonte_secao,
+                                fonte_titulo
                             )
                         VALUES
-                            (%s, %s, %s, %s, %s);
+                            (%s, %s, %s, %s, %s, %s, %s, %s, %s);
                     """, (
                         pk_categoria,
                         pk_objeto,
                         texto_regra,
                         embedding,
-                        inicio_sincronizacao
+                        inicio_sincronizacao,
+                        fonte_arq,
+                        fonte_pag,
+                        fonte_sec,
+                        fonte_tit,
                     ))
 
                     inseridas += 1

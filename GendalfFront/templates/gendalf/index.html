@@ -60,6 +60,43 @@
             <textarea id="pergunta" name="pergunta" placeholder="Ex.: como nomear uma trigger?&#10;Ex.: cole aqui o texto de uma trigger, procedure ou tabela para análise." required>{{ pergunta }}</textarea>
         </div>
 
+        {# ── Checkbox Modo Professor ───────────────────────────────────────── #}
+        <div style="
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            background: rgba(45, 53, 97, 0.35);
+            border: 1px solid #2d3561;
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        ">
+            <input
+                type="checkbox"
+                id="modo_professor"
+                name="modo_professor"
+                style="
+                    width: 1.15rem;
+                    height: 1.15rem;
+                    margin-top: 0.2rem;
+                    accent-color: #7c6af7;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                "
+                {% if modo_professor %}checked{% endif %}
+            >
+            <div>
+                <label for="modo_professor" style="cursor: pointer; color: #cbd5e1; font-weight: 600; font-size: 0.97rem; display: block; margin-bottom: 0.25rem;">
+                    🎓 Modo professor — revisar/corrigir código ou script
+                </label>
+                <span style="color: #64748b; font-size: 0.875rem; line-height: 1.5; display: block;">
+                    <strong style="color: #94a3b8;">Desmarcado:</strong> o Gendalf apenas responde com base no manual, sem auditar nem classificar.<br>
+                    <strong style="color: #94a3b8;">Marcado:</strong> o Gendalf avalia conformidade, classifica e sugere correções.
+                </span>
+            </div>
+        </div>
+        {# ──────────────────────────────────────────────────────────────────── #}
+
         <div class="actions">
             <button type="submit">Analisar texto</button>
             <a href="{% url 'app_python:index' %}" class="button-secondary">Novo texto</a>
@@ -68,6 +105,40 @@
 
     {% if resultado and resultado.ok %}
         <article class="result-card">
+
+            {# Badge de modo ativo #}
+            <p style="margin-top: 0; margin-bottom: 0.75rem;">
+                {% if modo_professor %}
+                    <span style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.35rem;
+                        background: rgba(124,106,247,0.18);
+                        border: 1px solid #7c6af7;
+                        color: #a78bfa;
+                        font-size: 0.8rem;
+                        font-weight: 600;
+                        padding: 0.2rem 0.65rem;
+                        border-radius: 999px;
+                        letter-spacing: 0.03em;
+                    ">🎓 Modo Professor ativo</span>
+                {% else %}
+                    <span style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.35rem;
+                        background: rgba(100,116,139,0.18);
+                        border: 1px solid #475569;
+                        color: #94a3b8;
+                        font-size: 0.8rem;
+                        font-weight: 600;
+                        padding: 0.2rem 0.65rem;
+                        border-radius: 999px;
+                        letter-spacing: 0.03em;
+                    ">📖 Modo Teórico</span>
+                {% endif %}
+            </p>
+
             {% if classificacao %}
                 <p style="margin-top: 0; margin-bottom: 1.25rem;">
                     <strong>Classificação Final:</strong>
@@ -75,7 +146,13 @@
                 </p>
             {% endif %}
 
-            <h2 style="margin-top: 0; font-size: 1.35rem; color: #cbd5e1; border-bottom: 1px solid #2d3561; padding-bottom: 0.5rem;">Análise detalhada do G.E.N.D.A.L.F.</h2>
+            <h2 style="margin-top: 0; font-size: 1.35rem; color: #cbd5e1; border-bottom: 1px solid #2d3561; padding-bottom: 0.5rem;">
+                {% if modo_professor %}
+                    Auditoria detalhada do G.E.N.D.A.L.F.
+                {% else %}
+                    Resposta do G.E.N.D.A.L.F.
+                {% endif %}
+            </h2>
 
             <div class="result-content" style="color: #cbd5e1; font-size: 0.98rem; margin-top: 1rem;">{{ resultado.resposta }}</div>
 

@@ -250,3 +250,13 @@ ALTER DATABASE "DetranNorma" SET timezone TO 'America/Recife';
 -- 7.1 Alteração geral do sistema para o fuso de recife.
 SET timezone TO 'America/Recife';
 SELECT pg_reload_conf();
+
+-- 8. RASTREABILIDADE DE FONTE DOCUMENTAL (migração incremental — 2026-05)
+-- Permite que o Gendalf cite página, seção e arquivo do manual nas respostas.
+ALTER TABLE public.regranomenclatura
+    ADD COLUMN IF NOT EXISTS fonte_arquivo VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS fonte_pagina  INT,
+    ADD COLUMN IF NOT EXISTS fonte_secao   VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS fonte_titulo  VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS fonte_hash    TEXT;
+

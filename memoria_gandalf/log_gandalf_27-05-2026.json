@@ -1,0 +1,26 @@
+[
+    {
+        "data_hora": "27/05/2026 09:01:13",
+        "categoria": "Nomenclatura de Objetos",
+        "pergunta": "\"-- dbhcen._zlista definição-- Drop table-- DROP TABLE dbhcen._zlista;CREATE TABLE dbhcen._zlista (\tcargo varchar(255) NULL,\tnome varchar(255) NULL,\tmatricula varchar(255) NULL,\tfiliacao varchar(255) NULL,\tnaturalidade varchar(255) NULL,\tdatanascimento varchar(255) NULL,\tcpf varchar(255) NULL); qual o notivo dessa table ter a letra Z no nome?\"",
+        "resposta": "```markdown\n1. **CLASSIFICAÇÃO GERAL:** Incorreto  \n2. **OBJETO(S) ANALISADO(S):** Tabela  \n3. **PONTOS CORRETOS:** Nenhum ponto confirmado.  \n4. **ERROS OU RISCOS:**  \n   - Nome da tabela viola a regra de nomenclatura (singular, sem abreviação, sem caracteres especiais).  \n   - Uso de underscore no início do nome, conforme Regra 4.  \n   - Nome sugesto ou ambíguo, violando a Regra 9.  \n   - Nome não está no singular, conforme Regra 1.  \n   - Uso de caracteres especiais (underscore) no início do nome, violando a Regra 7.  \n   - Nome contém abreviação (\"_zlista\"), violando a Regra 1.  \n5. **EXPLICAÇÃO:**  \n   - O nome da tabela `dbhcen._zlista` viola a Regra 1 (nome no singular, claro, sem abreviação) e a Regra 6 (não usar caracteres especiais). O underscore no início do nome é permitido pela Regra 16, mas a abreviação \"zlista\" não é permitida pela Regra 1. Além disso, a Regra 8 exige que os nomes estejam no singular e em português, o que não é atendido. A Regra 4 menciona tabelas com prefixo \"_\" como tabelas temporárias ou a serem excluídas, mas não há regra específica para o uso do underscore no início do nome.  \n6. **SUGESTÃO DE CORREÇÃO:**  \n   - O nome da tabela deve ser renomeado para algo mais descritivo, no singular, claro, sem abreviação e sem caracteres especiais no início. Exemplo: `dbhcen.PessoaFisica` ou `dbhcen.Funcionario`.  \n7. **REFERÊNCIAS:**  \n   - Regra 1: Nome no singular, claro, sem abreviação (exceto se >30 chars). [Fonte: Regra 1]  \n   - Regra 6: Não usar caracteres especiais (#, @, %, $, !, *, +, -, /, =). [Fonte: Regra 6]  \n   - Regra 7: Não usar caracteres especiais (#, @, %, $, !, *, +, -, /, =). [Fonte: Regra 7]  \n   - Regra 8: Usar termos em português e no singular. [Fonte: Regra 8]  \n   - Regra 9: Usar nomes curtos, claros e sem ambiguidade. [Fonte: Regra 9]  \n   - Regra 10: Não usar apenas números, verbos ou nomes próprios. [Fonte: Regra 10]  \n   - Regra 16: Permitir letras, números e underscore. [Fonte: Regra 16]  \n   - Regra 22/23: Nome no singular, claro, sem abreviação (exceto se >30 chars). [Fonte: Regra 22/23]  \n   - Fonte não informada para o propósito do prefixo \"_\" ou o significado de \"z\".  \n8. **VERSÃO CORRIGIDA:**  \n   - Nome da tabela: `dbhcen.PessoaFisica` ou `dbhcen.Funcionario`, conforme exemplo na Regra 17 (use Pascal Case).  \n   - A correção não é verificável com os trechos, pois não há exemplos práticos ou regras específicas para o prefixo \"_\" ou o significado de \"z\".\n```"
+    },
+    {
+        "data_hora": "27/05/2026 12:29:13",
+        "categoria": "GERAL",
+        "pergunta": "-- dbhcen._zmunicipio definição\r\n\r\n-- Drop table\r\n\r\n-- DROP TABLE dbhcen._zmunicipio;\r\n\r\nCREATE TABLE dbhcen._zmunicipio (\r\n\tnmunicipio int4 NULL,\r\n\tsnome varchar(50) NULL,\r\n\tsuf varchar(2) NULL\r\n);\r\nqual o motivo dessa table ter Z no nome?",
+        "resposta": "**Resposta direta:**  \nO manual não especifica regras para tabelas com prefixo \"Z\". A regra mencionada para o uso do \"Z\" é exclusiva de procedures, conforme descrito em [Regra 3]: \"z + login + objetivo da procedure\".\n\n**Regra aplicável:**  \n[Regra 3] Estrutura: z + login + objetivo da procedure (exemplo: zkrmlDuplicidadeDebitoLimpar).\n\n**Observação:**  \nO manual não fornece orientação específica para tabelas com prefixo \"Z\"."
+    },
+    {
+        "data_hora": "27/05/2026 13:06:39",
+        "categoria": "Regras Gerais",
+        "pergunta": "CREATE UNIQUE INDEX pkcfcempenho ON dbhcen.cfcempenho USING btree (ncfccontrato DESC, sempenho DESC);\r\no index foi criado da forma correta?",
+        "resposta": "Erro tecnico ao consultar LLM: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=360)"
+    },
+    {
+        "data_hora": "27/05/2026 13:17:26",
+        "categoria": "Nomenclatura de Objetos",
+        "pergunta": "CONSTRAINT pkeventocdt PRIMARY KEY (ncpf, nsequencia) qual a razão dessa constraint ter sido nomeada dessa forma?",
+        "resposta": "**Resposta direta:**  \nA constraint `pkeventocdt` segue a regra de nomenclatura para chaves primárias, conforme especificado no manual. O prefixo `pk` indica que se trata de uma chave primária, e o sufixo `eventocdt` corresponde ao nome da tabela ou contexto relacionado.\n\n**Regra aplicável:**  \n- [Regra 1] [Categoria: Nomenclatura de Objetos | Objeto: pk (Primary Key) | Distância: 0.4437]  \n  \"Chave primária natural ou sequencial.\"  \n- [Regra 2] [Categoria"
+    }
+]
