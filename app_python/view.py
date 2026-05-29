@@ -65,7 +65,7 @@ def index(request):
         "erro": "",
         "tempo": None,
         "is_admin": False,
-        "modo_professor": False,
+        "modo_professor": True,
     }
 
     if request.method == "POST":

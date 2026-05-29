@@ -1,0 +1,61 @@
+# version field removed — obsolete in modern Docker Compose
+
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: gandalf_db
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - gandalf_pgdata:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_service
+    restart: unless-stopped
+    ports:
+      - "11436:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app_network
+
+  gendalf_app:
+    build: .
+    container_name: gandalf_app
+    restart: unless-stopped
+    depends_on:
+      - db
+      - ollama
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: gendalf_config.settings
+      PYTHONUNBUFFERED: "1"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_SSLMODE: disable
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - .:/app
+    networks:
+      - app_network
+    command: python manage.py runserver 0.0.0.0:8000
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  gandalf_pgdata:
+  ollama_data:

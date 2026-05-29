@@ -299,7 +299,7 @@
     <!-- Overlay Loader para processamento pesado (ex: Upload PDF) -->
     <div id="loader" class="loader-overlay">
         <div class="spinner"></div>
-        <div class="loader-text" id="loader-message">Processando e indexando dados semânticos...</div>
+        <div class="loader-text" id="loader-message">Processando e indexando dados a serem analisados.</div>
     </div>
 
     <main class="page">
@@ -357,7 +357,7 @@
                     {% else %}
                         <li class="nav-item {% block nav_index %}{% endblock %}">
                             <a href="{% url 'app_python:index' %}">
-                                <span class="nav-icon">🔍</span> Análise Semântica
+                                <span class="nav-icon">🔍</span> Análise dos Objetos
                             </a>
                         </li>
                         <hr style="border: 0; border-top: 1px solid #2d3561; margin: 1rem 0;">

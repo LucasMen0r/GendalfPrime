@@ -60,43 +60,6 @@
             <textarea id="pergunta" name="pergunta" placeholder="Ex.: como nomear uma trigger?&#10;Ex.: cole aqui o texto de uma trigger, procedure ou tabela para análise." required>{{ pergunta }}</textarea>
         </div>
 
-        {# ── Checkbox Modo Professor ───────────────────────────────────────── #}
-        <div style="
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            background: rgba(45, 53, 97, 0.35);
-            border: 1px solid #2d3561;
-            border-radius: 10px;
-            padding: 1rem 1.25rem;
-            margin-bottom: 1.5rem;
-        ">
-            <input
-                type="checkbox"
-                id="modo_professor"
-                name="modo_professor"
-                style="
-                    width: 1.15rem;
-                    height: 1.15rem;
-                    margin-top: 0.2rem;
-                    accent-color: #7c6af7;
-                    cursor: pointer;
-                    flex-shrink: 0;
-                "
-                {% if modo_professor %}checked{% endif %}
-            >
-            <div>
-                <label for="modo_professor" style="cursor: pointer; color: #cbd5e1; font-weight: 600; font-size: 0.97rem; display: block; margin-bottom: 0.25rem;">
-                    🎓 Modo professor — revisar/corrigir código ou script
-                </label>
-                <span style="color: #64748b; font-size: 0.875rem; line-height: 1.5; display: block;">
-                    <strong style="color: #94a3b8;">Desmarcado:</strong> o Gendalf apenas responde com base no manual, sem auditar nem classificar.<br>
-                    <strong style="color: #94a3b8;">Marcado:</strong> o Gendalf avalia conformidade, classifica e sugere correções.
-                </span>
-            </div>
-        </div>
-        {# ──────────────────────────────────────────────────────────────────── #}
-
         <div class="actions">
             <button type="submit">Analisar texto</button>
             <a href="{% url 'app_python:index' %}" class="button-secondary">Novo texto</a>
